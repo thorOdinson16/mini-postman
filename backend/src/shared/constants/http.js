@@ -1,0 +1,2 @@
+export const HTTP_REQUEST_TIMEOUT_MS = 30000;
+export const HTTP_MAX_RESPONSE_BYTES = 5 * 1024 * 1024;

@@ -39,6 +39,8 @@ const responseSchema = new mongoose.Schema(
 		size: { type: Number, default: 0 },
 		durationMs: { type: Number, default: 0 },
 		contentType: { type: String, default: "" },
+		truncated: { type: Boolean, default: false },
+		error: { type: String, default: "" },
 	},
 	{ _id: false },
 );

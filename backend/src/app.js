@@ -3,6 +3,7 @@ import express from "express";
 import mongoose from "mongoose";
 import path from "path";
 import { fileURLToPath } from "url";
+import { collectionRouter } from "./features/collections/collection.routes.js";
 import { environmentRouter } from "./features/environments/environment.routes.js";
 import { workspaceRouter } from "./features/workspaces/workspace.routes.js";
 import { errorHandler, notFoundHandler } from "./shared/middleware/error-handler.js";
@@ -21,6 +22,7 @@ export function createApp() {
 	});
 	app.use("/api/v1/workspaces", workspaceRouter);
 	app.use("/api/v1/environments", environmentRouter);
+	app.use("/api/v1/collections", collectionRouter);
 	app.use(notFoundHandler);
 	app.use(errorHandler);
 	return app;

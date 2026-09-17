@@ -93,7 +93,7 @@ function FolderBranch({ collection, collectionRequests, draggingKey, dropTarget,
 	);
 }
 
-export function CollectionTree({ collections, error, expandedIds, loading, onApplyCollectionOrder, onApplyFolderOrder, onDeleteCollection, onDeleteFolder, onDuplicateCollection, onNewFolder, onRenameCollection, onRenameFolder, onRetry, onSelect, onSelectRequest, onToggle, requestsByCollection, requestsLoading, selectedId, selectedRequestId }) {
+export function CollectionTree({ collections, error, expandedIds, loading, onApplyCollectionOrder, onApplyFolderOrder, onDeleteCollection, onDeleteFolder, onDuplicateCollection, onExportCollection, onNewFolder, onRenameCollection, onRenameFolder, onRetry, onSelect, onSelectRequest, onToggle, requestsByCollection, requestsLoading, selectedId, selectedRequestId }) {
 	const [menu, setMenu] = useState(null);
 	const [draggingKey, setDraggingKey] = useState(null);
 	const [dropTarget, setDropTarget] = useState(null);
@@ -201,6 +201,7 @@ export function CollectionTree({ collections, error, expandedIds, loading, onApp
 			{ icon: "arrow_upward", label: "Move up", disabled: index <= 0, onSelect: () => moveCollection(collection, -1) },
 			{ icon: "arrow_downward", label: "Move down", disabled: index >= collectionIds.length - 1, onSelect: () => moveCollection(collection, 1) },
 			{ icon: "edit", label: "Rename", onSelect: () => onRenameCollection(collection) },
+			{ icon: "download", label: "Export", onSelect: () => onExportCollection(collection) },
 			{ icon: "delete", label: "Delete", danger: true, onSelect: () => onDeleteCollection(collection) },
 		];
 	};

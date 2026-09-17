@@ -4,6 +4,7 @@ import { CollectionEditor } from "../collections/CollectionEditor.jsx";
 import { environmentApi } from "../environments/environment.api.js";
 import { EnvironmentManager } from "../environments/EnvironmentManager.jsx";
 import { historyApi } from "../history/history.api.js";
+import { importExportApi } from "../import-export/import-export.api.js";
 import { HistoryDetail } from "../history/HistoryDetail.jsx";
 import { SaveToCollectionDialog } from "../history/SaveToCollectionDialog.jsx";
 import { requestApi } from "../requests/request.api.js";
@@ -45,6 +46,7 @@ export function WorkspaceShell({ account, onLogout }) {
 	const [historyBusy, setHistoryBusy] = useState(false);
 	const [historyActionError, setHistoryActionError] = useState("");
 	const [replaying, setReplaying] = useState(false);
+	const [transferError, setTransferError] = useState("");
 	const loadedCollections = useRef(new Set());
 	const [expandedIds, setExpandedIds] = useState(() => new Set());
 	const [editor, setEditor] = useState(null);
@@ -342,6 +344,46 @@ export function WorkspaceShell({ account, onLogout }) {
 			setCollectionsError(reorderError.message);
 		}
 	};
+	const exportCollection = async (collection) => {
+		try {
+			setTransferError("");
+			const result = await importExportApi.export(collection._id);
+			const blob = new Blob([JSON.stringify(result.collection, null, 2)], { type: "application/json" });
+			const url = URL.createObjectURL(blob);
+			const anchor = document.createElement("a");
+			anchor.href = url;
+			anchor.download = result.filename || `${collection.name}.postman_collection.json`;
+			document.body.appendChild(anchor);
+			anchor.click();
+			anchor.remove();
+			URL.revokeObjectURL(url);
+		} catch (exportError) {
+			setTransferError(exportError.message);
+		}
+	};
+	const importFile = async (file) => {
+		try {
+			setTransferError("");
+			if (file.size > 5 * 1024 * 1024) throw new Error("The selected file exceeds the 5 MB limit.");
+			const text = await file.text();
+			let content;
+			try {
+				content = JSON.parse(text);
+			} catch {
+				throw new Error("The selected file is not valid JSON.");
+			}
+			const created = await importExportApi.import(selectedId, content);
+			await loadCollections(selectedId);
+			setSelectedCollectionId(String(created._id));
+			setExpandedIds((current) => {
+				const next = new Set(current);
+				next.add(String(created._id));
+				return next;
+			});
+		} catch (importError) {
+			setTransferError(importError.message);
+		}
+	};
 	const duplicateCollection = async (collection) => {
 		try {
 			setCollectionsError("");
@@ -385,7 +427,10 @@ export function WorkspaceShell({ account, onLogout }) {
 				onClearHistory={() => { setHistoryActionError(""); setHistoryClearOpen(true); }}
 				onDeleteCollection={requestDeleteCollection}
 				onDeleteFolder={requestDeleteFolder}
+				onDismissTransferError={() => setTransferError("")}
 				onDuplicateCollection={duplicateCollection}
+				onExportCollection={exportCollection}
+				onImportFile={importFile}
 				onNewCollection={openNewCollection}
 				onNewFolder={openNewFolder}
 				onRenameCollection={openRenameCollection}
@@ -403,6 +448,7 @@ export function WorkspaceShell({ account, onLogout }) {
 				selectedHistoryId={selectedHistoryId}
 				selectedId={selectedId}
 				selectedRequestId={selectedRequestId}
+				transferError={transferError}
 				workspaces={workspaces}
 			/>
 			{!sidebarCollapsed && <button className="sidebar-scrim" aria-label="Close sidebar" onClick={toggleSidebar} />}

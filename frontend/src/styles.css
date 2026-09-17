@@ -163,6 +163,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .sidebar-error button { justify-self: start; height: 30px; padding: 0 14px; border: 0; border-radius: 15px; background: var(--danger); color: var(--danger-ink); font-size: 13px; font-weight: 500; }
 .sidebar-section-heading { display: flex; align-items: center; justify-content: space-between; padding: 0 6px 0 4px; }
 .sidebar-section-heading .sidebar-label { margin: 0; }
+.sidebar-section-actions { display: flex; gap: 2px; }
 .sidebar-add { width: 28px; height: 28px; }
 .collection-menu-button { display: inline-grid; width: 28px; height: 28px; flex: 0 0 auto; margin-right: 3px; padding: 0; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); opacity: 0; transition: opacity 120ms ease, background 120ms ease; }
 .tree-row:hover .collection-menu-button, .collection-row.active .collection-menu-button, .collection-menu-button:focus-visible { opacity: 1; }

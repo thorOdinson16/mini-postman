@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
 
-export function CollectionOptionsMenu({ collection, onClose, onDelete, onRename, position }) {
+export function OptionsMenu({ ariaLabel, items, onClose, position }) {
 	const reference = useRef(null);
 	useEffect(() => {
 		const closeOutside = (event) => {
@@ -20,9 +20,13 @@ export function CollectionOptionsMenu({ collection, onClose, onDelete, onRename,
 		};
 	}, [onClose]);
 	return createPortal(
-		<div className="collection-options-menu" role="menu" aria-label={`${collection.name} options`} ref={reference} style={{ left: position.left, top: position.top }}>
-			<button role="menuitem" onClick={() => { onClose(); onRename(collection); }}><MaterialIcon size={18}>edit</MaterialIcon><span>Rename</span></button>
-			<button className="collection-options-danger" role="menuitem" onClick={() => { onClose(); onDelete(collection); }}><MaterialIcon size={18}>delete</MaterialIcon><span>Delete</span></button>
+		<div className="collection-options-menu" role="menu" aria-label={ariaLabel} ref={reference} style={{ left: position.left, top: position.top }}>
+			{items.map((item) => (
+				<button key={item.label} className={item.danger ? "collection-options-danger" : ""} role="menuitem" onClick={() => { onClose(); item.onSelect(); }}>
+					<MaterialIcon size={18}>{item.icon}</MaterialIcon>
+					<span>{item.label}</span>
+				</button>
+			))}
 		</div>,
 		document.body,
 	);

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
-import { CollectionOptionsMenu } from "./CollectionOptionsMenu.jsx";
+import { OptionsMenu } from "./OptionsMenu.jsx";
 import { buildFolderTree } from "./collection-tree.js";
 
-function FolderBranch({ expandedIds, onToggle, nodes }) {
+function FolderBranch({ collection, expandedIds, nodes, onOpenMenu, onToggle }) {
 	return (
 		<ul className="folder-list">
 			{nodes.map(({ folder, children }) => {
@@ -19,8 +19,9 @@ function FolderBranch({ expandedIds, onToggle, nodes }) {
 								<span className="tree-toggle-spacer" aria-hidden="true" />
 							)}
 							<span className="tree-name">{folder.name}</span>
+							<button className="collection-menu-button" aria-haspopup="menu" aria-label={`More options for ${folder.name}`} onClick={(event) => onOpenMenu(event, { key: `folder:${id}`, kind: "folder", collection, folder })}><MaterialIcon size={18}>more_vert</MaterialIcon></button>
 						</div>
-						{hasChildren && expanded && <FolderBranch expandedIds={expandedIds} nodes={children} onToggle={onToggle} />}
+						{hasChildren && expanded && <FolderBranch collection={collection} expandedIds={expandedIds} nodes={children} onOpenMenu={onOpenMenu} onToggle={onToggle} />}
 					</li>
 				);
 			})}
@@ -28,8 +29,22 @@ function FolderBranch({ expandedIds, onToggle, nodes }) {
 	);
 }
 
-export function CollectionTree({ collections, error, expandedIds, loading, onDeleteCollection, onRenameCollection, onRetry, onSelect, onToggle, selectedId }) {
+export function CollectionTree({ collections, error, expandedIds, loading, onDeleteCollection, onDeleteFolder, onNewFolder, onRenameCollection, onRenameFolder, onRetry, onSelect, onToggle, selectedId }) {
 	const [menu, setMenu] = useState(null);
+	const openMenu = (event, descriptor) => {
+		const rectangle = event.currentTarget.getBoundingClientRect();
+		setMenu((current) => (current?.key === descriptor.key ? null : { ...descriptor, position: { left: Math.min(rectangle.right + 8, window.innerWidth - 220), top: Math.max(8, Math.min(rectangle.bottom + 4, window.innerHeight - 170)) } }));
+	};
+	const collectionItems = (collection) => [
+		{ icon: "add", label: "New folder", onSelect: () => onNewFolder(collection) },
+		{ icon: "edit", label: "Rename", onSelect: () => onRenameCollection(collection) },
+		{ icon: "delete", label: "Delete", danger: true, onSelect: () => onDeleteCollection(collection) },
+	];
+	const folderItems = (collection, folder) => [
+		{ icon: "add", label: "New subfolder", onSelect: () => onNewFolder(collection, folder) },
+		{ icon: "edit", label: "Rename", onSelect: () => onRenameFolder(collection, folder) },
+		{ icon: "delete", label: "Delete", danger: true, onSelect: () => onDeleteFolder(collection, folder) },
+	];
 	if (loading) return <div className="collection-skeleton" aria-hidden="true"><span /><span /><span /></div>;
 	if (error) return <div className="sidebar-error" role="alert"><span>{error}</span><button onClick={onRetry}>Try again</button></div>;
 	if (!collections.length) return <p className="sidebar-empty">No collections yet</p>;
@@ -51,24 +66,13 @@ export function CollectionTree({ collections, error, expandedIds, loading, onDel
 								<MaterialIcon size={18}>folder</MaterialIcon>
 								<span className="tree-name">{collection.name}</span>
 							</button>
-							<button
-								className="collection-menu-button"
-								aria-expanded={menu?.collection._id === id}
-								aria-haspopup="menu"
-								aria-label={`More options for ${collection.name}`}
-								onClick={(event) => {
-									const rectangle = event.currentTarget.getBoundingClientRect();
-									setMenu((current) => (current?.collection._id === id ? null : { collection, position: { left: Math.min(rectangle.right + 8, window.innerWidth - 200), top: Math.max(8, Math.min(rectangle.bottom + 4, window.innerHeight - 140)) } }));
-								}}
-							>
-								<MaterialIcon size={18}>more_vert</MaterialIcon>
-							</button>
+							<button className="collection-menu-button" aria-haspopup="menu" aria-label={`More options for ${collection.name}`} onClick={(event) => openMenu(event, { key: `collection:${id}`, kind: "collection", collection })}><MaterialIcon size={18}>more_vert</MaterialIcon></button>
 						</div>
-						{hasFolders && expanded && <FolderBranch expandedIds={expandedIds} nodes={buildFolderTree(collection.folders)} onToggle={onToggle} />}
+						{hasFolders && expanded && <FolderBranch collection={collection} expandedIds={expandedIds} nodes={buildFolderTree(collection.folders)} onOpenMenu={openMenu} onToggle={onToggle} />}
 					</li>
 				);
 			})}
-			{menu && <CollectionOptionsMenu collection={menu.collection} onClose={() => setMenu(null)} onDelete={onDeleteCollection} onRename={onRenameCollection} position={menu.position} />}
+			{menu && <OptionsMenu ariaLabel={`${menu.kind === "folder" ? menu.folder.name : menu.collection.name} options`} items={menu.kind === "folder" ? folderItems(menu.collection, menu.folder) : collectionItems(menu.collection)} onClose={() => setMenu(null)} position={menu.position} />}
 		</ul>
 	);
 }

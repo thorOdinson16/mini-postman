@@ -145,7 +145,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .collection-row.active .collection-select, .collection-row.active .tree-toggle { color: var(--accent-ink); }
 .collection-row.active .collection-select .material-icon { color: var(--accent-ink); }
 .tree-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.folder-row .tree-name { font-size: 13px; }
+.folder-row .tree-name { flex: 1; font-size: 13px; }
 .collection-skeleton { display: grid; gap: 8px; padding: 4px; }
 .collection-skeleton span { height: 34px; border-radius: 10px; background: var(--hover); animation: skeleton-pulse 1.4s ease-in-out infinite; }
 .collection-skeleton span:nth-child(2) { width: 78%; }
@@ -180,6 +180,7 @@ dialog::backdrop { background: rgb(0 0 0 / 48%); }
 .confirmation-dialog .confirmation-confirm:hover { filter: brightness(1.08); }
 .collection-editor { display: grid; width: min(440px, calc(100vw - 48px)); padding: 26px 26px 20px; }
 .collection-editor h2 { margin: 0 0 16px; color: var(--ink-strong); font-size: 19px; font-weight: 500; }
+.collection-editor-context { margin: -10px 0 16px; color: var(--muted); font-size: 13px; }
 .collection-editor form { display: grid; }
 .collection-editor .outlined-input { margin-bottom: 14px; }
 .collection-editor .outlined-input textarea { width: 100%; min-height: 84px; padding: 18px 15px 10px; border: 1px solid var(--outline); border-radius: 8px; outline: none; background: transparent; color: var(--ink-strong); font-size: 15px; resize: vertical; }

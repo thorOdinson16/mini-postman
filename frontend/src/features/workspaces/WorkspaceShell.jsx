@@ -90,8 +90,34 @@ export function WorkspaceShell({ account, onLogout }) {
 			return next;
 		});
 	};
-	const saveCollection = async (values) => {
-		if (editor?.mode === "edit") {
+	const openNewCollection = () => setEditor({ kind: "collection", mode: "create" });
+	const openNewFolder = (collection, parent = null) => setEditor({ kind: "folder", mode: "create", collectionId: collection._id, parentId: parent?._id ?? null, parentName: parent?.name ?? collection.name });
+	const openRenameCollection = (collection) => setEditor({ kind: "collection", mode: "edit", collection });
+	const openRenameFolder = (collection, folder) => setEditor({ kind: "folder", mode: "edit", collectionId: collection._id, folder, parentName: collection.name });
+	const requestDeleteCollection = (collection) => {
+		setDeleteError("");
+		setDeleting({ kind: "collection", collection });
+	};
+	const requestDeleteFolder = (collection, folder) => {
+		setDeleteError("");
+		setDeleting({ kind: "folder", collectionId: collection._id, folder });
+	};
+	const saveEditor = async (values) => {
+		if (editor.kind === "folder") {
+			if (editor.mode === "edit") {
+				await collectionApi.renameFolder(editor.collectionId, editor.folder._id, { name: values.name });
+				await loadCollections(selectedId);
+			} else {
+				await collectionApi.addFolder(editor.collectionId, { name: values.name, parentId: editor.parentId });
+				setExpandedIds((current) => {
+					const next = new Set(current);
+					next.add(String(editor.collectionId));
+					if (editor.parentId) next.add(String(editor.parentId));
+					return next;
+				});
+				await loadCollections(selectedId);
+			}
+		} else if (editor.mode === "edit") {
 			await collectionApi.update(editor.collection._id, values);
 			await loadCollections(selectedId);
 		} else {
@@ -101,11 +127,12 @@ export function WorkspaceShell({ account, onLogout }) {
 		}
 		setEditor(null);
 	};
-	const confirmDeleteCollection = async () => {
+	const confirmDelete = async () => {
 		try {
 			setDeleteBusy(true);
 			setDeleteError("");
-			await collectionApi.remove(deleting._id);
+			if (deleting.kind === "folder") await collectionApi.removeFolder(deleting.collectionId, deleting.folder._id);
+			else await collectionApi.remove(deleting.collection._id);
 			await loadCollections(selectedId);
 			setDeleting(null);
 		} catch (deleteRequestError) {
@@ -125,9 +152,12 @@ export function WorkspaceShell({ account, onLogout }) {
 				collectionsLoading={collectionsLoading}
 				expandedIds={expandedIds}
 				loading={loading}
-				onDeleteCollection={(collection) => { setDeleteError(""); setDeleting(collection); }}
-				onNewCollection={() => setEditor({ mode: "create" })}
-				onRenameCollection={(collection) => setEditor({ mode: "edit", collection })}
+				onDeleteCollection={requestDeleteCollection}
+				onDeleteFolder={requestDeleteFolder}
+				onNewCollection={openNewCollection}
+				onNewFolder={openNewFolder}
+				onRenameCollection={openRenameCollection}
+				onRenameFolder={openRenameFolder}
 				onRetryCollections={() => loadCollections(selectedId)}
 				onSelect={setSelectedId}
 				onSelectCollection={setSelectedCollectionId}
@@ -157,16 +187,16 @@ export function WorkspaceShell({ account, onLogout }) {
 					</div>
 				)}
 			</main>
-			{editor && <CollectionEditor collection={editor.mode === "edit" ? editor.collection : null} onClose={() => setEditor(null)} onSave={saveCollection} />}
+			{editor && <CollectionEditor collection={editor.mode === "edit" ? (editor.kind === "folder" ? editor.folder : editor.collection) : null} kind={editor.kind} parentName={editor.parentName || ""} onClose={() => setEditor(null)} onSave={saveEditor} />}
 			{deleting && (
 				<ConfirmationDialog
 					busy={deleteBusy}
 					confirmLabel="Delete"
 					error={deleteError}
-					message={`"${deleting.name}" and its requests will be permanently deleted.`}
+					message={deleting.kind === "folder" ? `"${deleting.folder.name}" will be permanently deleted.` : `"${deleting.collection.name}" and its requests will be permanently deleted.`}
 					onCancel={() => { if (!deleteBusy) { setDeleting(null); setDeleteError(""); } }}
-					onConfirm={confirmDeleteCollection}
-					title="Delete collection?"
+					onConfirm={confirmDelete}
+					title={deleting.kind === "folder" ? "Delete folder?" : "Delete collection?"}
 				/>
 			)}
 		</div>

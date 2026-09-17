@@ -130,6 +130,10 @@ export const collectionService = {
 		if (collection.folders.some((folder) => sameParent(folder.parentId, folderId))) {
 			throw new AppError(409, "FOLDER_NOT_EMPTY", "Delete this folder's subfolders before deleting it.");
 		}
+		const requestCount = await requestRepository.countByFolder(collectionId, folderId);
+		if (requestCount) {
+			throw new AppError(409, "FOLDER_NOT_EMPTY", "Move or delete this folder's requests before deleting it.", { requestCount });
+		}
 		const updated = await collectionRepository.removeFolder(collectionId, folderId);
 		if (!updated) throw new AppError(404, "FOLDER_NOT_FOUND", "The requested folder does not exist.");
 		return updated;

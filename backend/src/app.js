@@ -5,6 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { collectionRouter } from "./features/collections/collection.routes.js";
 import { environmentRouter } from "./features/environments/environment.routes.js";
+import { historyRouter } from "./features/history/history.routes.js";
 import { requestRouter } from "./features/requests/request.routes.js";
 import { workspaceRouter } from "./features/workspaces/workspace.routes.js";
 import { errorHandler, notFoundHandler } from "./shared/middleware/error-handler.js";
@@ -25,6 +26,7 @@ export function createApp() {
 	app.use("/api/v1/environments", environmentRouter);
 	app.use("/api/v1/collections", collectionRouter);
 	app.use("/api/v1/requests", requestRouter);
+	app.use("/api/v1/history", historyRouter);
 	app.use(notFoundHandler);
 	app.use(errorHandler);
 	return app;

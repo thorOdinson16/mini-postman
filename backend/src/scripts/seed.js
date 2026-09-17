@@ -9,7 +9,7 @@ import { HistoryEntry } from "../features/history/history-entry.model.js";
 import { Request } from "../features/requests/request.model.js";
 import { Workspace } from "../features/workspaces/workspace.model.js";
 import { loadConfig } from "../shared/config/index.js";
-import { buildVariableMap, resolveRequestParts } from "../shared/utils/variables.js";
+import { buildVariableMap, resolveAuth, resolveRequestParts } from "../shared/utils/variables.js";
 
 const config = loadConfig();
 
@@ -111,11 +111,6 @@ const environmentRows = [
 	},
 ];
 
-// NOTE: Collection-level auth is not run through variable resolution yet. request.service.js
-// resolves request auth but passes collection.auth through as-is, so keep this token literal
-// until that resolver is fixed, then switch it to "{{token}}".
-const OPERATIONS_COLLECTION_TOKEN = "operations-collection-token-2026";
-
 const collectionRows = [
 	{
 		key: "personal-auth",
@@ -190,7 +185,7 @@ const collectionRows = [
 		workspace: "operations",
 		name: "Monitoring",
 		description: "Incident tracking with collection-level authorization.",
-		auth: bearer(OPERATIONS_COLLECTION_TOKEN),
+		auth: bearer("{{token}}"),
 		folders: [],
 		requests: [
 			{ name: "List incidents", method: "GET", url: "{{baseUrl}}/incidents", auth: noAuth() },
@@ -413,15 +408,21 @@ async function seedRequests(collections) {
 	return { requests, byKey: byKeyCreated };
 }
 
-function buildHistory(workspaces, environments, requests) {
+function buildHistory(workspaces, environments, collections, requests) {
 	const environmentByName = new Map(environments.map((environment) => [`${String(environment.workspaceId)}|${environment.name}`, environment]));
+	const collectionAuthByKey = new Map(collections.collections.map(({ row, collection }) => [row.key, collection.auth]));
 	return historyRows.map((entry) => {
 		const workspace = workspaces.byKey.get(entry.workspace);
 		const environment = environmentByName.get(`${String(workspace._id)}|${entry.environment}`);
 		if (!environment) throw new Error(`Seed history references a missing environment "${entry.environment}".`);
 		const request = requests.byKey.get(`${entry.collection}/${entry.request}`);
 		if (!request) throw new Error(`Seed history references a missing request "${entry.request}".`);
-		const resolved = resolveRequestParts(request, buildVariableMap(environment.variables));
+		const variables = buildVariableMap(environment.variables);
+		const resolved = resolveRequestParts(request, variables);
+		resolved.auth =
+			request.auth && request.auth.type !== "none"
+				? resolved.auth
+				: resolveAuth(collectionAuthByKey.get(entry.collection) ?? { type: "none" }, variables);
 		return {
 			workspaceId: workspace._id,
 			environmentId: environment._id,
@@ -494,7 +495,7 @@ async function seed() {
 		const environments = await seedEnvironments(workspaces);
 		const collections = await seedCollections(workspaces);
 		const requests = await seedRequests(collections);
-		const history = buildHistory(workspaces, environments, requests);
+		const history = buildHistory(workspaces, environments, collections, requests);
 		validateSeed(workspaces, environments, collections, requests, history);
 		const historyEntries = await HistoryEntry.create(history);
 		console.log(`\nSeeding history...\n  Created ${historyEntries.length} history entries`);

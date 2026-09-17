@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { AppError } from "../../shared/errors/app-error.js";
-import { buildVariableMap, resolveRequestParts } from "../../shared/utils/variables.js";
+import { buildVariableMap, resolveAuth, resolveRequestParts } from "../../shared/utils/variables.js";
 import { collectionRepository } from "../collections/collection.repository.js";
 import { environmentRepository } from "../environments/environment.repository.js";
 import { historyRepository } from "../history/history.repository.js";
@@ -53,9 +53,9 @@ async function loadEnvironment(workspaceId, environmentId) {
 	return environmentRepository.findActive(workspaceId);
 }
 
-function selectAuth(requestAuth, collectionAuth) {
+function selectAuth(requestAuth, collectionAuth, variableMap) {
 	if (requestAuth && requestAuth.type && requestAuth.type !== "none") return requestAuth;
-	return collectionAuth ?? { type: "none" };
+	return resolveAuth(collectionAuth ?? { type: "none" }, variableMap);
 }
 
 function toSnapshot(resolved) {
@@ -150,8 +150,11 @@ export const requestService = {
 		if (!request) throw new AppError(404, "REQUEST_NOT_FOUND", "The requested request does not exist.");
 		const collection = await loadCollection(request.collectionId);
 		const environment = await environmentRepository.findActive(collection.workspaceId);
-		const resolved = resolveRequestParts(request, buildVariableMap(environment?.variables));
-		const response = await executeRequest(resolved, selectAuth(resolved.auth, collection.auth));
+		const variables = buildVariableMap(environment?.variables);
+		const resolved = resolveRequestParts(request, variables);
+		const auth = selectAuth(resolved.auth, collection.auth, variables);
+		resolved.auth = auth;
+		const response = await executeRequest(resolved, auth);
 		await recordHistory(collection.workspaceId, environment?._id, resolved, response);
 		return { requestId: request._id, environmentId: environment?._id ?? null, request: resolved, response };
 	},

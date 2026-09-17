@@ -3,6 +3,8 @@ import { AppError } from "../../shared/errors/app-error.js";
 
 export const POSTMAN_SCHEMA = "https://schema.getpostman.com/json/collection/v2.1.0/collection.json";
 
+const MAX_IMPORT_DEPTH = 50;
+
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 const MAX_NAME = 120;
 const MAX_REQUEST_NAME = 160;
@@ -199,7 +201,8 @@ export function toPostmanCollection(collection, requests) {
 	return result;
 }
 
-function walkItems(items, parentId, folders, requests) {
+function walkItems(items, parentId, folders, requests, depth = 0) {
+	if (depth > MAX_IMPORT_DEPTH) throw new AppError(400, "INVALID_COLLECTION_FORMAT", "The collection is nested too deeply.");
 	let folderOrder = 0;
 	let requestOrder = 0;
 	for (const item of items) {
@@ -208,7 +211,7 @@ function walkItems(items, parentId, folders, requests) {
 			const folder = { _id: new mongoose.Types.ObjectId(), name: clamp(item.name ?? "Folder", MAX_NAME) || "Folder", parentId: parentId ?? null, order: folderOrder };
 			folderOrder += 1;
 			folders.push(folder);
-			walkItems(item.item, folder._id, folders, requests);
+			walkItems(item.item, folder._id, folders, requests, depth + 1);
 		} else if (item.request) {
 			const parsed = requestFromPostman(item.request);
 			requests.push({ ...parsed, name: clamp(item.name ?? "Request", MAX_REQUEST_NAME) || "Request", folderId: parentId ?? null, order: requestOrder });

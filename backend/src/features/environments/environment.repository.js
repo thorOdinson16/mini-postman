@@ -10,6 +10,7 @@ export const environmentRepository = {
 			...(excludedId ? { _id: { $ne: excludedId } } : {}),
 		}).lean(),
 	findActive: (workspaceId) => Environment.findOne({ workspaceId, isActive: true }).lean(),
+	findOldestExcluding: (workspaceId, id) => Environment.findOne({ workspaceId, _id: { $ne: id } }).sort({ createdAt: 1 }).lean(),
 	countByWorkspace: (workspaceId) => Environment.countDocuments({ workspaceId }),
 	create: (input) => Environment.create(input),
 	update: (id, input) => Environment.findByIdAndUpdate(id, input, { new: true, runValidators: true }).lean(),

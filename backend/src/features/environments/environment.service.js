@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { AppError } from "../../shared/errors/app-error.js";
+import { historyRepository } from "../history/history.repository.js";
 import { workspaceRepository } from "../workspaces/workspace.repository.js";
 import { environmentRepository } from "./environment.repository.js";
 
@@ -70,6 +71,11 @@ export const environmentService = {
 		ensureId(id);
 		const environment = await environmentRepository.findById(id);
 		if (!environment) throw new AppError(404, "ENVIRONMENT_NOT_FOUND", "The requested environment does not exist.");
+		await historyRepository.clearEnvironment(environment.workspaceId, id);
 		await environmentRepository.remove(id);
+		if (environment.isActive) {
+			const replacement = await environmentRepository.findOldestExcluding(environment.workspaceId, id);
+			if (replacement) await environmentRepository.update(replacement._id, { isActive: true });
+		}
 	},
 };

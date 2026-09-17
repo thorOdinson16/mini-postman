@@ -11,6 +11,7 @@ export const historyRepository = {
 	create: (input) => HistoryEntry.create(input),
 	remove: (id) => HistoryEntry.findByIdAndDelete(id).lean(),
 	removeByWorkspace: (workspaceId) => HistoryEntry.deleteMany({ workspaceId }),
+	clearEnvironment: (workspaceId, environmentId) => HistoryEntry.updateMany({ workspaceId, environmentId }, { $set: { environmentId: null } }),
 	deleteAll: () => HistoryEntry.deleteMany({}),
 	insertMany: (items) => HistoryEntry.insertMany(items),
 };

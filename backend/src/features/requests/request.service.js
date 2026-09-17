@@ -1,11 +1,12 @@
 import mongoose from "mongoose";
 import { AppError } from "../../shared/errors/app-error.js";
-import { buildVariableMap, resolveAuth, resolveRequestParts } from "../../shared/utils/variables.js";
+import { buildVariableMap, resolveRequestParts } from "../../shared/utils/variables.js";
 import { collectionRepository } from "../collections/collection.repository.js";
 import { environmentRepository } from "../environments/environment.repository.js";
 import { historyRepository } from "../history/history.repository.js";
 import { workspaceRepository } from "../workspaces/workspace.repository.js";
 import { executeRequest } from "./http.js";
+import { selectAuth } from "./outgoing.js";
 import { requestRepository } from "./request.repository.js";
 
 function ensureId(id) {
@@ -51,11 +52,6 @@ async function loadEnvironment(workspaceId, environmentId) {
 		return environment;
 	}
 	return environmentRepository.findActive(workspaceId);
-}
-
-function selectAuth(requestAuth, collectionAuth, variableMap) {
-	if (requestAuth && requestAuth.type && requestAuth.type !== "none") return requestAuth;
-	return resolveAuth(collectionAuth ?? { type: "none" }, variableMap);
 }
 
 function toSnapshot(resolved) {

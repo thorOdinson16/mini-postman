@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { collectionApi } from "../collections/collection.api.js";
 import { CollectionEditor } from "../collections/CollectionEditor.jsx";
+import { requestApi } from "../requests/request.api.js";
+import { RequestEditor } from "../requests/RequestEditor.jsx";
 import { ConfirmationDialog } from "../../shared/components/ConfirmationDialog.jsx";
 import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
 import { WorkspaceHeader } from "./WorkspaceHeader.jsx";
@@ -21,6 +23,10 @@ export function WorkspaceShell({ account, onLogout }) {
 	const [collectionsLoading, setCollectionsLoading] = useState(false);
 	const [collectionsError, setCollectionsError] = useState("");
 	const [selectedCollectionId, setSelectedCollectionId] = useState(() => localStorage.getItem("postman-collection-id") || "");
+	const [requestsByCollection, setRequestsByCollection] = useState({});
+	const [requestsLoading, setRequestsLoading] = useState({});
+	const [selectedRequestId, setSelectedRequestId] = useState("");
+	const loadedCollections = useRef(new Set());
 	const [expandedIds, setExpandedIds] = useState(() => new Set());
 	const [editor, setEditor] = useState(null);
 	const [deleting, setDeleting] = useState(null);
@@ -65,8 +71,27 @@ export function WorkspaceShell({ account, onLogout }) {
 	useEffect(() => {
 		loadWorkspaces();
 	}, [loadWorkspaces]);
+	const loadRequests = useCallback(async (collectionId, force = false) => {
+		if (!collectionId) return;
+		if (!force && loadedCollections.current.has(collectionId)) return;
+		loadedCollections.current.add(collectionId);
+		setRequestsLoading((current) => ({ ...current, [collectionId]: true }));
+		try {
+			const list = await requestApi.list(collectionId);
+			setRequestsByCollection((current) => ({ ...current, [collectionId]: list }));
+		} catch {
+			loadedCollections.current.delete(collectionId);
+			setRequestsByCollection((current) => ({ ...current, [collectionId]: [] }));
+		} finally {
+			setRequestsLoading((current) => ({ ...current, [collectionId]: false }));
+		}
+	}, []);
 	useEffect(() => {
 		setExpandedIds(new Set());
+		loadedCollections.current = new Set();
+		setRequestsByCollection({});
+		setRequestsLoading({});
+		setSelectedRequestId("");
 		loadCollections(selectedId);
 	}, [selectedId, loadCollections]);
 	useEffect(() => {
@@ -83,12 +108,24 @@ export function WorkspaceShell({ account, onLogout }) {
 		localStorage.setItem("postman-sidebar", next ? "collapsed" : "expanded");
 	};
 	const toggleCollection = (id) => {
+		const willExpand = !expandedIds.has(id);
+		const isCollection = collections.some((collection) => String(collection._id) === String(id));
 		setExpandedIds((current) => {
 			const next = new Set(current);
 			if (next.has(id)) next.delete(id);
 			else next.add(id);
 			return next;
 		});
+		if (willExpand && isCollection) loadRequests(id);
+	};
+	const selectRequest = (collectionId, requestId) => {
+		setSelectedCollectionId(collectionId);
+		setSelectedRequestId(requestId);
+	};
+	const saveRequest = async (requestItem, payload) => {
+		const updated = await requestApi.update(requestItem._id, payload);
+		await loadRequests(requestItem.collectionId, true);
+		setSelectedRequestId(String(updated._id));
 	};
 	const openNewCollection = () => setEditor({ kind: "collection", mode: "create" });
 	const openNewFolder = (collection, parent = null) => setEditor({ kind: "folder", mode: "create", collectionId: collection._id, parentId: parent?._id ?? null, parentName: parent?.name ?? collection.name });
@@ -171,6 +208,7 @@ export function WorkspaceShell({ account, onLogout }) {
 	};
 	const selectedWorkspace = workspaces.find((workspace) => workspace._id === selectedId) || null;
 	const selectedCollection = collections.find((collection) => String(collection._id) === String(selectedCollectionId)) || null;
+	const selectedRequest = Object.values(requestsByCollection).flat().find((item) => String(item._id) === String(selectedRequestId)) || null;
 	return (
 		<div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
 			<WorkspaceHeader account={account} onLogout={onLogout} onSidebarToggle={toggleSidebar} />
@@ -192,14 +230,20 @@ export function WorkspaceShell({ account, onLogout }) {
 				onRetryCollections={() => loadCollections(selectedId)}
 				onSelect={setSelectedId}
 				onSelectCollection={setSelectedCollectionId}
+				onSelectRequest={selectRequest}
 				onToggleCollection={toggleCollection}
+				requestsByCollection={requestsByCollection}
+				requestsLoading={requestsLoading}
 				selectedCollectionId={selectedCollectionId}
 				selectedId={selectedId}
+				selectedRequestId={selectedRequestId}
 				workspaces={workspaces}
 			/>
 			{!sidebarCollapsed && <button className="sidebar-scrim" aria-label="Close sidebar" onClick={toggleSidebar} />}
-			<main className="workspace-surface">
-				{error ? (
+			<main className={`workspace-surface ${selectedRequest ? "editing" : ""}`}>
+				{selectedRequest ? (
+					<RequestEditor key={selectedRequest._id} request={selectedRequest} onSave={(payload) => saveRequest(selectedRequest, payload)} />
+				) : error ? (
 					<div className="service-error" role="alert"><MaterialIcon size={20}>error_outline</MaterialIcon><span>{error}</span><button onClick={loadWorkspaces}>Retry</button></div>
 				) : (
 					<div className="workspace-empty">

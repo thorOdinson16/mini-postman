@@ -9,6 +9,32 @@ const descriptorFor = (collection, folder = null) =>
 	folder
 		? { kind: "folder", id: String(folder._id), parent: folder.parentId ? String(folder.parentId) : null, collectionId: String(collection._id) }
 		: { kind: "collection", id: String(collection._id), parent: null, collectionId: String(collection._id) };
+const requestsFor = (requests, folderId) =>
+	requests
+		.filter((item) => (item.folderId ? String(item.folderId) : null) === (folderId ? String(folderId) : null))
+		.sort((left, right) => (left.order ?? 0) - (right.order ?? 0));
+
+function RequestsList({ collectionId, onSelectRequest, requests, selectedRequestId }) {
+	return (
+		<ul className="folder-list">
+			{requests.map((item) => {
+				const selected = String(item._id) === String(selectedRequestId);
+				return (
+					<li key={item._id}>
+						<div className={`tree-row request-row ${selected ? "active" : ""}`}>
+							<span className="drag-spacer" aria-hidden="true" />
+							<span className="tree-toggle-spacer" aria-hidden="true" />
+							<button className="request-select" aria-current={selected ? "true" : undefined} onClick={() => onSelectRequest(collectionId, String(item._id))}>
+								<span className={`method-badge method-${String(item.method).toLowerCase()}`}>{item.method}</span>
+								<span className="tree-name">{item.name}</span>
+							</button>
+						</div>
+					</li>
+				);
+			})}
+		</ul>
+	);
+}
 
 function TreeRow({ children, descriptor, draggingKey, dropTarget, onDragEnd, onDragMove, onDragStart, onDragCancel, className = "" }) {
 	const key = dragKey(descriptor.kind, descriptor.id);
@@ -34,20 +60,21 @@ function TreeRow({ children, descriptor, draggingKey, dropTarget, onDragEnd, onD
 	);
 }
 
-function FolderBranch({ collection, draggingKey, dropTarget, expandedIds, nodes, onDragCancel, onDragEnd, onDragMove, onDragStart, onOpenMenu, onToggle }) {
+function FolderBranch({ collection, collectionRequests, draggingKey, dropTarget, expandedIds, nodes, onDragCancel, onDragEnd, onDragMove, onDragStart, onOpenMenu, onSelectRequest, onToggle, selectedRequestId }) {
 	return (
 		<ul className="folder-list">
 			{nodes.map(({ folder, children }) => {
 				const id = String(folder._id);
 				const expanded = expandedIds.has(id);
-				const hasChildren = children.length > 0;
+				const folderRequests = requestsFor(collectionRequests, id);
+				const expandable = children.length > 0 || folderRequests.length > 0;
 				return (
 					<li key={id}>
 						<TreeRow className="folder-row" descriptor={descriptorFor(collection, folder)} draggingKey={draggingKey} dropTarget={dropTarget} onDragCancel={onDragCancel} onDragEnd={onDragEnd} onDragMove={onDragMove} onDragStart={onDragStart}>
 							{(dragHandlers) => (
 								<>
 									{nodes.length > 1 ? <button className="drag-handle" type="button" tabIndex={-1} aria-hidden="true" {...dragHandlers}><MaterialIcon size={16}>drag_indicator</MaterialIcon></button> : <span className="drag-spacer" aria-hidden="true" />}
-									{hasChildren ? (
+									{expandable ? (
 										<button className={`tree-toggle ${expanded ? "expanded" : ""}`} aria-expanded={expanded} aria-label={`${expanded ? "Collapse" : "Expand"} ${folder.name}`} onClick={() => onToggle(id)}><MaterialIcon size={18}>chevron_right</MaterialIcon></button>
 									) : (
 										<span className="tree-toggle-spacer" aria-hidden="true" />
@@ -57,7 +84,8 @@ function FolderBranch({ collection, draggingKey, dropTarget, expandedIds, nodes,
 								</>
 							)}
 						</TreeRow>
-						{hasChildren && expanded && <FolderBranch collection={collection} draggingKey={draggingKey} dropTarget={dropTarget} expandedIds={expandedIds} nodes={children} onDragCancel={onDragCancel} onDragEnd={onDragEnd} onDragMove={onDragMove} onDragStart={onDragStart} onOpenMenu={onOpenMenu} onToggle={onToggle} />}
+						{expanded && children.length > 0 && <FolderBranch collection={collection} collectionRequests={collectionRequests} draggingKey={draggingKey} dropTarget={dropTarget} expandedIds={expandedIds} nodes={children} onDragCancel={onDragCancel} onDragEnd={onDragEnd} onDragMove={onDragMove} onDragStart={onDragStart} onOpenMenu={onOpenMenu} onSelectRequest={onSelectRequest} onToggle={onToggle} selectedRequestId={selectedRequestId} />}
+						{expanded && folderRequests.length > 0 && <RequestsList collectionId={String(collection._id)} onSelectRequest={onSelectRequest} requests={folderRequests} selectedRequestId={selectedRequestId} />}
 					</li>
 				);
 			})}
@@ -65,7 +93,7 @@ function FolderBranch({ collection, draggingKey, dropTarget, expandedIds, nodes,
 	);
 }
 
-export function CollectionTree({ collections, error, expandedIds, loading, onApplyCollectionOrder, onApplyFolderOrder, onDeleteCollection, onDeleteFolder, onDuplicateCollection, onNewFolder, onRenameCollection, onRenameFolder, onRetry, onSelect, onToggle, selectedId }) {
+export function CollectionTree({ collections, error, expandedIds, loading, onApplyCollectionOrder, onApplyFolderOrder, onDeleteCollection, onDeleteFolder, onDuplicateCollection, onNewFolder, onRenameCollection, onRenameFolder, onRetry, onSelect, onSelectRequest, onToggle, requestsByCollection, requestsLoading, selectedId, selectedRequestId }) {
 	const [menu, setMenu] = useState(null);
 	const [draggingKey, setDraggingKey] = useState(null);
 	const [dropTarget, setDropTarget] = useState(null);
@@ -196,17 +224,16 @@ export function CollectionTree({ collections, error, expandedIds, loading, onApp
 				const id = String(collection._id);
 				const expanded = expandedIds.has(id);
 				const hasFolders = collection.folders.length > 0;
+				const collectionRequests = requestsByCollection[id] || [];
+				const rootRequests = requestsFor(collectionRequests, null);
+				const loadingRequests = Boolean(requestsLoading[id]);
 				return (
 					<li key={id}>
 						<TreeRow className={`collection-row ${id === selectedId ? "active" : ""}`} descriptor={descriptorFor(collection)} draggingKey={draggingKey} dropTarget={dropTarget} onDragCancel={cancelDrag} onDragEnd={finishDrag} onDragMove={onDragMove} onDragStart={onDragStart}>
 							{(dragHandlers) => (
 								<>
 									{collectionIds.length > 1 ? <button className="drag-handle" type="button" tabIndex={-1} aria-hidden="true" {...dragHandlers}><MaterialIcon size={16}>drag_indicator</MaterialIcon></button> : <span className="drag-spacer" aria-hidden="true" />}
-									{hasFolders ? (
-										<button className={`tree-toggle ${expanded ? "expanded" : ""}`} aria-expanded={expanded} aria-label={`${expanded ? "Collapse" : "Expand"} ${collection.name}`} onClick={() => onToggle(id)}><MaterialIcon size={18}>chevron_right</MaterialIcon></button>
-									) : (
-										<span className="tree-toggle-spacer" aria-hidden="true" />
-									)}
+									<button className={`tree-toggle ${expanded ? "expanded" : ""}`} aria-expanded={expanded} aria-label={`${expanded ? "Collapse" : "Expand"} ${collection.name}`} onClick={() => onToggle(id)}><MaterialIcon size={18}>chevron_right</MaterialIcon></button>
 									<button className="collection-select" aria-current={id === selectedId ? "true" : undefined} onClick={() => onSelect(id)}>
 										<MaterialIcon size={18}>folder</MaterialIcon>
 										<span className="tree-name">{collection.name}</span>
@@ -215,7 +242,9 @@ export function CollectionTree({ collections, error, expandedIds, loading, onApp
 								</>
 							)}
 						</TreeRow>
-						{hasFolders && expanded && <FolderBranch collection={collection} draggingKey={draggingKey} dropTarget={dropTarget} expandedIds={expandedIds} nodes={buildFolderTree(collection.folders)} onDragCancel={cancelDrag} onDragEnd={finishDrag} onDragMove={onDragMove} onDragStart={onDragStart} onOpenMenu={openMenu} onToggle={onToggle} />}
+						{expanded && hasFolders && <FolderBranch collection={collection} collectionRequests={collectionRequests} draggingKey={draggingKey} dropTarget={dropTarget} expandedIds={expandedIds} nodes={buildFolderTree(collection.folders)} onDragCancel={cancelDrag} onDragEnd={finishDrag} onDragMove={onDragMove} onDragStart={onDragStart} onOpenMenu={openMenu} onSelectRequest={onSelectRequest} onToggle={onToggle} selectedRequestId={selectedRequestId} />}
+						{expanded && loadingRequests && <ul className="folder-list"><li className="tree-loading">Loading requests…</li></ul>}
+						{expanded && !loadingRequests && rootRequests.length > 0 && <RequestsList collectionId={id} onSelectRequest={onSelectRequest} requests={rootRequests} selectedRequestId={selectedRequestId} />}
 					</li>
 				);
 			})}

@@ -1,7 +1,7 @@
 import { CollectionTree } from "../collections/CollectionTree.jsx";
 import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
 
-export function WorkspaceSidebar({ collections, collectionsError, collectionsLoading, expandedIds, loading, onApplyCollectionOrder, onApplyFolderOrder, onDeleteCollection, onDeleteFolder, onDuplicateCollection, onNewCollection, onNewFolder, onRenameCollection, onRenameFolder, onRetryCollections, onSelect, onSelectCollection, onToggleCollection, selectedCollectionId, selectedId, workspaces }) {
+export function WorkspaceSidebar({ collections, collectionsError, collectionsLoading, expandedIds, loading, onApplyCollectionOrder, onApplyFolderOrder, onDeleteCollection, onDeleteFolder, onDuplicateCollection, onNewCollection, onNewFolder, onRenameCollection, onRenameFolder, onRetryCollections, onSelect, onSelectCollection, onSelectRequest, onToggleCollection, requestsByCollection, requestsLoading, selectedCollectionId, selectedId, selectedRequestId, workspaces }) {
 	return (
 		<aside className="sidebar">
 			<div className="sidebar-inner">
@@ -29,7 +29,7 @@ export function WorkspaceSidebar({ collections, collectionsError, collectionsLoa
 						<p className="sidebar-label">Collections</p>
 						<button className="icon-button sidebar-add" aria-label="New collection" title="New collection" onClick={onNewCollection}><MaterialIcon size={18}>add</MaterialIcon></button>
 					</div>
-					<CollectionTree collections={collections} error={collectionsError} expandedIds={expandedIds} loading={collectionsLoading} onApplyCollectionOrder={onApplyCollectionOrder} onApplyFolderOrder={onApplyFolderOrder} onDeleteCollection={onDeleteCollection} onDeleteFolder={onDeleteFolder} onDuplicateCollection={onDuplicateCollection} onNewFolder={onNewFolder} onRenameCollection={onRenameCollection} onRenameFolder={onRenameFolder} onRetry={onRetryCollections} onSelect={onSelectCollection} onToggle={onToggleCollection} selectedId={selectedCollectionId} />
+					<CollectionTree collections={collections} error={collectionsError} expandedIds={expandedIds} loading={collectionsLoading} onApplyCollectionOrder={onApplyCollectionOrder} onApplyFolderOrder={onApplyFolderOrder} onDeleteCollection={onDeleteCollection} onDeleteFolder={onDeleteFolder} onDuplicateCollection={onDuplicateCollection} onNewFolder={onNewFolder} onRenameCollection={onRenameCollection} onRenameFolder={onRenameFolder} onRetry={onRetryCollections} onSelect={onSelectCollection} onSelectRequest={onSelectRequest} onToggle={onToggleCollection} requestsByCollection={requestsByCollection} requestsLoading={requestsLoading} selectedId={selectedCollectionId} selectedRequestId={selectedRequestId} />
 				</div>
 			</div>
 		</aside>

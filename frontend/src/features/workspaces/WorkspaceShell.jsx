@@ -3,6 +3,9 @@ import { collectionApi } from "../collections/collection.api.js";
 import { CollectionEditor } from "../collections/CollectionEditor.jsx";
 import { environmentApi } from "../environments/environment.api.js";
 import { EnvironmentManager } from "../environments/EnvironmentManager.jsx";
+import { historyApi } from "../history/history.api.js";
+import { HistoryDetail } from "../history/HistoryDetail.jsx";
+import { SaveToCollectionDialog } from "../history/SaveToCollectionDialog.jsx";
 import { requestApi } from "../requests/request.api.js";
 import { RequestEditor } from "../requests/RequestEditor.jsx";
 import { ConfirmationDialog } from "../../shared/components/ConfirmationDialog.jsx";
@@ -31,6 +34,17 @@ export function WorkspaceShell({ account, onLogout }) {
 	const [environments, setEnvironments] = useState([]);
 	const [environmentsError, setEnvironmentsError] = useState("");
 	const [environmentManager, setEnvironmentManager] = useState(null);
+	const [sidebarTab, setSidebarTab] = useState("collections");
+	const [history, setHistory] = useState([]);
+	const [historyLoading, setHistoryLoading] = useState(false);
+	const [historyError, setHistoryError] = useState("");
+	const [selectedHistoryId, setSelectedHistoryId] = useState("");
+	const [historyDeleting, setHistoryDeleting] = useState(null);
+	const [historyClearOpen, setHistoryClearOpen] = useState(false);
+	const [historySaving, setHistorySaving] = useState(null);
+	const [historyBusy, setHistoryBusy] = useState(false);
+	const [historyActionError, setHistoryActionError] = useState("");
+	const [replaying, setReplaying] = useState(false);
 	const loadedCollections = useRef(new Set());
 	const [expandedIds, setExpandedIds] = useState(() => new Set());
 	const [editor, setEditor] = useState(null);
@@ -108,15 +122,39 @@ export function WorkspaceShell({ account, onLogout }) {
 			return [];
 		}
 	}, []);
+	const loadHistory = useCallback(async (workspaceId) => {
+		if (!workspaceId) {
+			setHistory([]);
+			setHistoryError("");
+			setHistoryLoading(false);
+			return [];
+		}
+		try {
+			setHistoryError("");
+			setHistoryLoading(true);
+			const list = await historyApi.list(workspaceId);
+			setHistory(list);
+			return list;
+		} catch (historyLoadError) {
+			setHistoryError(historyLoadError.message);
+			setHistory([]);
+			return [];
+		} finally {
+			setHistoryLoading(false);
+		}
+	}, []);
 	useEffect(() => {
 		setExpandedIds(new Set());
 		loadedCollections.current = new Set();
 		setRequestsByCollection({});
 		setRequestsLoading({});
 		setSelectedRequestId("");
+		setSelectedHistoryId("");
+		setSidebarTab("collections");
 		loadCollections(selectedId);
 		loadEnvironments(selectedId);
-	}, [selectedId, loadCollections, loadEnvironments]);
+		loadHistory(selectedId);
+	}, [selectedId, loadCollections, loadEnvironments, loadHistory]);
 	useEffect(() => {
 		if (selectedId) localStorage.setItem("postman-workspace-id", selectedId);
 		else localStorage.removeItem("postman-workspace-id");
@@ -167,6 +205,68 @@ export function WorkspaceShell({ account, onLogout }) {
 	const selectRequest = (collectionId, requestId) => {
 		setSelectedCollectionId(collectionId);
 		setSelectedRequestId(requestId);
+		setSelectedHistoryId("");
+	};
+	const selectHistory = (id) => {
+		setSelectedHistoryId(id);
+		setSelectedRequestId("");
+	};
+	const replayHistory = async (entry) => {
+		try {
+			setReplaying(true);
+			setHistoryError("");
+			const result = await historyApi.replay(entry._id);
+			await loadHistory(selectedId);
+			setSelectedHistoryId(String(result.historyId));
+		} catch (replayError) {
+			setHistoryError(replayError.message);
+		} finally {
+			setReplaying(false);
+		}
+	};
+	const saveHistory = async (entry, payload) => {
+		const created = await historyApi.save(entry._id, payload);
+		await loadCollections(selectedId);
+		await loadRequests(created.collectionId, true);
+		setSelectedCollectionId(String(created.collectionId));
+		setSelectedRequestId(String(created._id));
+		setSelectedHistoryId("");
+		setSidebarTab("collections");
+		setExpandedIds((current) => {
+			const next = new Set(current);
+			next.add(String(created.collectionId));
+			if (created.folderId) next.add(String(created.folderId));
+			return next;
+		});
+		setHistorySaving(null);
+	};
+	const confirmDeleteHistory = async () => {
+		try {
+			setHistoryBusy(true);
+			setHistoryActionError("");
+			await historyApi.remove(historyDeleting._id);
+			await loadHistory(selectedId);
+			if (String(selectedHistoryId) === String(historyDeleting._id)) setSelectedHistoryId("");
+			setHistoryDeleting(null);
+		} catch (historyDeleteError) {
+			setHistoryActionError(historyDeleteError.message);
+		} finally {
+			setHistoryBusy(false);
+		}
+	};
+	const confirmClearHistory = async () => {
+		try {
+			setHistoryBusy(true);
+			setHistoryActionError("");
+			await historyApi.clear(selectedId);
+			await loadHistory(selectedId);
+			setSelectedHistoryId("");
+			setHistoryClearOpen(false);
+		} catch (historyClearError) {
+			setHistoryActionError(historyClearError.message);
+		} finally {
+			setHistoryBusy(false);
+		}
 	};
 	const saveRequest = async (requestItem, payload) => {
 		const updated = await requestApi.update(requestItem._id, payload);
@@ -255,6 +355,8 @@ export function WorkspaceShell({ account, onLogout }) {
 	const selectedWorkspace = workspaces.find((workspace) => workspace._id === selectedId) || null;
 	const selectedCollection = collections.find((collection) => String(collection._id) === String(selectedCollectionId)) || null;
 	const selectedRequest = Object.values(requestsByCollection).flat().find((item) => String(item._id) === String(selectedRequestId)) || null;
+	const selectedHistoryEntry = history.find((entry) => String(entry._id) === String(selectedHistoryId)) || null;
+	const editing = Boolean(selectedRequest || selectedHistoryEntry);
 	return (
 		<div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
 			<WorkspaceHeader
@@ -268,13 +370,19 @@ export function WorkspaceShell({ account, onLogout }) {
 				onSidebarToggle={toggleSidebar}
 			/>
 			<WorkspaceSidebar
+				activeTab={sidebarTab}
+				onTabChange={setSidebarTab}
 				onApplyCollectionOrder={applyCollectionOrder}
 				onApplyFolderOrder={applyFolderOrder}
 				collections={collections}
 				collectionsError={collectionsError}
 				collectionsLoading={collectionsLoading}
 				expandedIds={expandedIds}
+				history={history}
+				historyError={historyError}
+				historyLoading={historyLoading}
 				loading={loading}
+				onClearHistory={() => { setHistoryActionError(""); setHistoryClearOpen(true); }}
 				onDeleteCollection={requestDeleteCollection}
 				onDeleteFolder={requestDeleteFolder}
 				onDuplicateCollection={duplicateCollection}
@@ -283,21 +391,33 @@ export function WorkspaceShell({ account, onLogout }) {
 				onRenameCollection={openRenameCollection}
 				onRenameFolder={openRenameFolder}
 				onRetryCollections={() => loadCollections(selectedId)}
+				onRetryHistory={() => loadHistory(selectedId)}
 				onSelect={setSelectedId}
 				onSelectCollection={setSelectedCollectionId}
+				onSelectHistory={selectHistory}
 				onSelectRequest={selectRequest}
 				onToggleCollection={toggleCollection}
 				requestsByCollection={requestsByCollection}
 				requestsLoading={requestsLoading}
 				selectedCollectionId={selectedCollectionId}
+				selectedHistoryId={selectedHistoryId}
 				selectedId={selectedId}
 				selectedRequestId={selectedRequestId}
 				workspaces={workspaces}
 			/>
 			{!sidebarCollapsed && <button className="sidebar-scrim" aria-label="Close sidebar" onClick={toggleSidebar} />}
-			<main className={`workspace-surface ${selectedRequest ? "editing" : ""}`}>
+			<main className={`workspace-surface ${editing ? "editing" : ""}`}>
 				{selectedRequest ? (
 					<RequestEditor key={selectedRequest._id} request={selectedRequest} onSave={(payload) => saveRequest(selectedRequest, payload)} />
+				) : selectedHistoryEntry ? (
+					<HistoryDetail
+						key={selectedHistoryEntry._id}
+						entry={selectedHistoryEntry}
+						onDelete={() => { setHistoryActionError(""); setHistoryDeleting(selectedHistoryEntry); }}
+						onReplay={() => replayHistory(selectedHistoryEntry)}
+						onSave={() => setHistorySaving(selectedHistoryEntry)}
+						replaying={replaying}
+					/>
 				) : error ? (
 					<div className="service-error" role="alert"><MaterialIcon size={20}>error_outline</MaterialIcon><span>{error}</span><button onClick={loadWorkspaces}>Retry</button></div>
 				) : (
@@ -341,6 +461,36 @@ export function WorkspaceShell({ account, onLogout }) {
 					onCancel={() => { if (!deleteBusy) { setDeleting(null); setDeleteError(""); } }}
 					onConfirm={confirmDelete}
 					title={deleting.kind === "folder" ? "Delete folder?" : "Delete collection?"}
+				/>
+			)}
+			{historySaving && (
+				<SaveToCollectionDialog
+					collections={collections}
+					defaultName={`${historySaving.request.method} ${historySaving.request.rawUrl || historySaving.request.url}`.slice(0, 160)}
+					onClose={() => setHistorySaving(null)}
+					onSave={(payload) => saveHistory(historySaving, payload)}
+				/>
+			)}
+			{historyDeleting && (
+				<ConfirmationDialog
+					busy={historyBusy}
+					confirmLabel="Delete"
+					error={historyActionError}
+					message="This history entry will be permanently deleted."
+					onCancel={() => { if (!historyBusy) { setHistoryDeleting(null); setHistoryActionError(""); } }}
+					onConfirm={confirmDeleteHistory}
+					title="Delete history entry?"
+				/>
+			)}
+			{historyClearOpen && (
+				<ConfirmationDialog
+					busy={historyBusy}
+					confirmLabel="Clear"
+					error={historyActionError}
+					message="All history for this workspace will be permanently deleted."
+					onCancel={() => { if (!historyBusy) { setHistoryClearOpen(false); setHistoryActionError(""); } }}
+					onConfirm={confirmClearHistory}
+					title="Clear history?"
 				/>
 			)}
 		</div>

@@ -364,6 +364,50 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .kv-description { height: 40px; padding: 0 12px; border: 0; border-left: 1px solid var(--divider); background: transparent; color: var(--ink-strong); font-size: 13px; }
 .kv-description:focus { background: var(--hover); outline: none; }
 
+/* History */
+.sidebar-tabs { display: flex; gap: 4px; padding: 0 4px; }
+.sidebar-tabs button { flex: 1; height: 34px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; }
+.sidebar-tabs button:hover { background: var(--hover); color: var(--ink); }
+.sidebar-tabs button.active { background: var(--accent-tint); color: var(--accent-ink); }
+.history-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.history-item { display: flex; width: 100%; align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-radius: 10px; background: transparent; text-align: left; }
+.history-item:hover { background: var(--hover); }
+.history-item.active { background: var(--accent-tint); }
+.history-item-body { display: grid; min-width: 0; gap: 3px; }
+.history-item-url { overflow: hidden; color: var(--ink); font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
+.history-item.active .history-item-url { color: var(--accent-ink); }
+.history-item-meta { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
+.history-status { padding: 1px 6px; border-radius: 5px; font-size: 10px; font-weight: 700; }
+.history-status.success { color: var(--success); background: var(--success-container); }
+.history-status.redirect { color: var(--info, #7fcfff); background: var(--accent-wash); }
+.history-status.client { color: var(--warning, #fdd663); background: var(--warning-container); }
+.history-status.server, .history-status.error { color: var(--danger); background: var(--danger-container); }
+.history-clear { display: inline-flex; align-items: center; gap: 8px; align-self: start; margin: 8px 4px 0; padding: 8px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 12.5px; }
+.history-clear:hover { background: var(--danger-container); color: var(--danger); }
+.history-detail { display: grid; gap: 16px; }
+.history-detail-bar { display: flex; align-items: center; gap: 12px; }
+.history-detail-url { min-width: 0; overflow: hidden; color: var(--ink-strong); font-family: "Roboto Mono", ui-monospace, monospace; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.history-detail-time { color: var(--muted); font-size: 12px; }
+.history-detail-actions { display: flex; gap: 8px; margin-left: auto; }
+.history-detail-actions button { height: 34px; padding: 0 14px; border: 1px solid var(--border); border-radius: 17px; background: transparent; color: var(--accent); font-size: 13px; font-weight: 500; }
+.history-detail-actions button:not(:disabled):hover { background: var(--accent-tint); }
+.history-detail-actions button:disabled { opacity: .6; cursor: default; }
+.history-detail-actions .danger { color: var(--danger); }
+.history-detail-actions .danger:hover { background: var(--danger-container); }
+.save-request { display: grid; gap: 14px; width: min(460px, calc(100vw - 48px)); padding: 24px; }
+.save-request h2 { margin: 0; color: var(--ink-strong); font-size: 19px; font-weight: 500; }
+.save-request form { display: grid; gap: 14px; }
+.save-request-field { display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; gap: 12px; }
+.save-request-field > span { color: var(--muted); font-size: 13px; }
+.save-request-empty { margin: 0; color: var(--quiet); font-size: 13px; }
+.save-request-error { margin: 0; color: var(--danger); font-size: 13px; }
+.save-request-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.save-request-actions button { height: 38px; padding: 0 18px; border: 0; border-radius: 19px; background: transparent; color: var(--accent); font-size: 14px; font-weight: 500; }
+.save-request-actions button:hover { background: var(--hover); }
+.save-request-actions .save-request-submit { background: var(--accent); color: var(--accent-on); }
+.save-request-actions .save-request-submit:hover { filter: brightness(1.08); }
+.save-request-actions button:disabled { opacity: .7; cursor: default; }
+
 /* Dialogs */
 dialog { padding: 0; border: 0; border-radius: 18px; background: var(--surface); color: var(--ink); }
 dialog::backdrop { background: rgb(0 0 0 / 48%); }

@@ -1,36 +1,68 @@
 import { CollectionTree } from "../collections/CollectionTree.jsx";
+import { HistoryList } from "../history/HistoryList.jsx";
 import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
 
-export function WorkspaceSidebar({ collections, collectionsError, collectionsLoading, expandedIds, loading, onApplyCollectionOrder, onApplyFolderOrder, onDeleteCollection, onDeleteFolder, onDuplicateCollection, onNewCollection, onNewFolder, onRenameCollection, onRenameFolder, onRetryCollections, onSelect, onSelectCollection, onSelectRequest, onToggleCollection, requestsByCollection, requestsLoading, selectedCollectionId, selectedId, selectedRequestId, workspaces }) {
+export function WorkspaceSidebar({ activeTab, collections, collectionsError, collectionsLoading, expandedIds, history, historyError, historyLoading, loading, onApplyCollectionOrder, onApplyFolderOrder, onClearHistory, onDeleteCollection, onDeleteFolder, onDuplicateCollection, onNewCollection, onNewFolder, onRenameCollection, onRenameFolder, onRetryCollections, onRetryHistory, onSelect, onSelectCollection, onSelectHistory, onSelectRequest, onTabChange, onToggleCollection, requestsByCollection, requestsLoading, selectedCollectionId, selectedHistoryId, selectedId, selectedRequestId, workspaces }) {
 	return (
 		<aside className="sidebar">
 			<div className="sidebar-inner">
-				<div className="sidebar-section">
-					<p className="sidebar-label">Workspace</p>
-					{loading ? (
-						<div className="sidebar-skeleton" aria-hidden="true"><span /><span /><span /></div>
-					) : workspaces.length ? (
-						<ul className="workspace-list" aria-label="Workspaces">
-							{workspaces.map((workspace) => (
-								<li key={workspace._id}>
-									<button className={`workspace-option ${workspace._id === selectedId ? "active" : ""}`} aria-current={workspace._id === selectedId ? "true" : undefined} onClick={() => onSelect(workspace._id)}>
-										<span className="workspace-option-initial">{workspace.name.slice(0, 1).toUpperCase()}</span>
-										<span className="workspace-option-name">{workspace.name}</span>
-									</button>
-								</li>
-							))}
-						</ul>
-					) : (
-						<p className="sidebar-empty">No workspaces yet</p>
-					)}
+				<div className="sidebar-tabs" role="tablist" aria-label="Sidebar sections">
+					<button type="button" role="tab" aria-selected={activeTab === "collections"} className={activeTab === "collections" ? "active" : ""} onClick={() => onTabChange("collections")}>Collections</button>
+					<button type="button" role="tab" aria-selected={activeTab === "history"} className={activeTab === "history" ? "active" : ""} onClick={() => onTabChange("history")}>History</button>
 				</div>
-				<div className="sidebar-section">
-					<div className="sidebar-section-heading">
-						<p className="sidebar-label">Collections</p>
-						<button className="icon-button sidebar-add" aria-label="New collection" title="New collection" onClick={onNewCollection}><MaterialIcon size={18}>add</MaterialIcon></button>
-					</div>
-					<CollectionTree collections={collections} error={collectionsError} expandedIds={expandedIds} loading={collectionsLoading} onApplyCollectionOrder={onApplyCollectionOrder} onApplyFolderOrder={onApplyFolderOrder} onDeleteCollection={onDeleteCollection} onDeleteFolder={onDeleteFolder} onDuplicateCollection={onDuplicateCollection} onNewFolder={onNewFolder} onRenameCollection={onRenameCollection} onRenameFolder={onRenameFolder} onRetry={onRetryCollections} onSelect={onSelectCollection} onSelectRequest={onSelectRequest} onToggle={onToggleCollection} requestsByCollection={requestsByCollection} requestsLoading={requestsLoading} selectedId={selectedCollectionId} selectedRequestId={selectedRequestId} />
-				</div>
+				{activeTab === "history" ? (
+					<HistoryList entries={history} error={historyError} loading={historyLoading} onClear={onClearHistory} onRetry={onRetryHistory} onSelect={onSelectHistory} selectedId={selectedHistoryId} />
+				) : (
+					<>
+						<div className="sidebar-section">
+							<p className="sidebar-label">Workspace</p>
+							{loading ? (
+								<div className="sidebar-skeleton" aria-hidden="true"><span /><span /><span /></div>
+							) : workspaces.length ? (
+								<ul className="workspace-list" aria-label="Workspaces">
+									{workspaces.map((workspace) => (
+										<li key={workspace._id}>
+											<button className={`workspace-option ${workspace._id === selectedId ? "active" : ""}`} aria-current={workspace._id === selectedId ? "true" : undefined} onClick={() => onSelect(workspace._id)}>
+												<span className="workspace-option-initial">{workspace.name.slice(0, 1).toUpperCase()}</span>
+												<span className="workspace-option-name">{workspace.name}</span>
+											</button>
+										</li>
+									))}
+								</ul>
+							) : (
+								<p className="sidebar-empty">No workspaces yet</p>
+							)}
+						</div>
+						<div className="sidebar-section">
+							<div className="sidebar-section-heading">
+								<p className="sidebar-label">Collections</p>
+								<button className="icon-button sidebar-add" aria-label="New collection" title="New collection" onClick={onNewCollection}><MaterialIcon size={18}>add</MaterialIcon></button>
+							</div>
+							<CollectionTree
+								collections={collections}
+								error={collectionsError}
+								expandedIds={expandedIds}
+								loading={collectionsLoading}
+								onApplyCollectionOrder={onApplyCollectionOrder}
+								onApplyFolderOrder={onApplyFolderOrder}
+								onDeleteCollection={onDeleteCollection}
+								onDeleteFolder={onDeleteFolder}
+								onDuplicateCollection={onDuplicateCollection}
+								onNewFolder={onNewFolder}
+								onRenameCollection={onRenameCollection}
+								onRenameFolder={onRenameFolder}
+								onRetry={onRetryCollections}
+								onSelect={onSelectCollection}
+								onSelectRequest={onSelectRequest}
+								onToggle={onToggleCollection}
+								requestsByCollection={requestsByCollection}
+								requestsLoading={requestsLoading}
+								selectedId={selectedCollectionId}
+								selectedRequestId={selectedRequestId}
+							/>
+						</div>
+					</>
+				)}
 			</div>
 		</aside>
 	);

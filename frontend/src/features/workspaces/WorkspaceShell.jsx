@@ -55,6 +55,10 @@ export function WorkspaceShell({ account, onLogout }) {
 	const [workspaceDeleting, setWorkspaceDeleting] = useState(null);
 	const [workspaceBusy, setWorkspaceBusy] = useState(false);
 	const [workspaceActionError, setWorkspaceActionError] = useState("");
+	const [draft, setDraft] = useState(null);
+	const [draftDirty, setDraftDirty] = useState(false);
+	const [discardAction, setDiscardAction] = useState(null);
+	const [draftSavePayload, setDraftSavePayload] = useState(null);
 	const loadedCollections = useRef(new Set());
 	const [expandedIds, setExpandedIds] = useState(() => new Set());
 	const [editor, setEditor] = useState(null);
@@ -220,15 +224,42 @@ export function WorkspaceShell({ account, onLogout }) {
 		await environmentApi.remove(id);
 		await loadEnvironments(selectedId);
 	};
-	const selectRequest = (collectionId, requestId) => {
-		setSelectedCollectionId(collectionId);
-		setSelectedRequestId(requestId);
-		setSelectedHistoryId("");
+	const clearDraft = () => {
+		setDraft(null);
+		setDraftDirty(false);
 	};
-	const selectHistory = (id) => {
-		setSelectedHistoryId(id);
-		setSelectedRequestId("");
+	const guardDraft = (action) => {
+		if (draft && draftDirty) {
+			setDiscardAction(() => action);
+			return;
+		}
+		clearDraft();
+		action();
 	};
+	const selectRequest = (collectionId, requestId) =>
+		guardDraft(() => {
+			clearDraft();
+			setSelectedCollectionId(collectionId);
+			setSelectedRequestId(requestId);
+			setSelectedHistoryId("");
+			setSidebarTab("collections");
+		});
+	const selectHistory = (id) =>
+		guardDraft(() => {
+			clearDraft();
+			setSelectedHistoryId(id);
+			setSelectedRequestId("");
+		});
+	const selectCollection = (id) =>
+		guardDraft(() => {
+			clearDraft();
+			setSelectedCollectionId(id);
+		});
+	const selectWorkspace = (id) =>
+		guardDraft(() => {
+			clearDraft();
+			setSelectedId(id);
+		});
 	const replayHistory = async (entry) => {
 		try {
 			setReplaying(true);
@@ -285,6 +316,35 @@ export function WorkspaceShell({ account, onLogout }) {
 		const updated = await requestApi.update(requestItem._id, payload);
 		await loadRequests(String(requestItem.collectionId), true);
 		setSelectedRequestId(String(updated._id));
+	};
+	const sendRequestEditor = async (payload) => {
+		if (draft) return requestApi.sendAdHoc({ workspaceId: selectedId, ...payload });
+		return requestApi.send(selectedRequestId);
+	};
+	const saveDraftToCollection = (payload) => {
+		setDraftSavePayload(payload);
+	};
+	const confirmSaveDraft = async (values) => {
+		const created = await requestApi.create({
+			collectionId: values.collectionId,
+			folderId: values.folderId,
+			name: values.name,
+			method: draftSavePayload.method,
+			url: draftSavePayload.url,
+			queryParams: draftSavePayload.queryParams,
+			headers: draftSavePayload.headers,
+			body: draftSavePayload.body,
+			auth: draftSavePayload.auth,
+		});
+		await loadCollections(selectedId);
+		await loadRequests(String(created.collectionId), true);
+		clearDraft();
+		setDraftSavePayload(null);
+		setSelectedCollectionId(String(created.collectionId));
+		setSelectedRequestId(String(created._id));
+		setSelectedHistoryId("");
+		setSidebarTab("collections");
+		expand([String(created.collectionId), created.folderId]);
 	};
 	const openNewCollection = () => setEditor({ kind: "collection", mode: "create" });
 	const openNewFolder = (collection, parent = null) => setEditor({ kind: "folder", mode: "create", collectionId: collection._id, parentId: parent?._id ?? null, parentName: parent?.name ?? collection.name });
@@ -368,18 +428,28 @@ export function WorkspaceShell({ account, onLogout }) {
 			setCollectionsError(duplicateError.message);
 		}
 	};
-	const createRequest = async (collection, folder = null) => {
-		try {
-			setCollectionsError("");
-			const created = await requestApi.create({ collectionId: String(collection._id), folderId: folder ? String(folder._id) : null, name: "New request", method: "GET", url: "" });
-			await loadRequests(String(collection._id), true);
-			setSelectedCollectionId(String(collection._id));
-			setSelectedRequestId(String(created._id));
-			setSelectedHistoryId("");
-			expand([String(collection._id), folder?._id]);
-		} catch (createError) {
-			setRequestsError((current) => ({ ...current, [String(collection._id)]: createError.message }));
-		}
+	const startDraft = (collection, folder = null) => {
+		clearDraft();
+		setDraft({
+			_id: "draft",
+			name: "New request",
+			method: "GET",
+			url: "",
+			queryParams: [],
+			headers: [],
+			body: { mode: "none", raw: "", formData: [], urlEncoded: [] },
+			auth: { type: "none", bearer: { token: "" }, basic: { username: "", password: "" }, apiKey: { key: "", value: "", addTo: "header" } },
+			collectionId: String(collection._id),
+			folderId: folder ? String(folder._id) : null,
+		});
+		setSelectedCollectionId(String(collection._id));
+		setSelectedRequestId("");
+		setSelectedHistoryId("");
+		setSidebarTab("collections");
+		expand([String(collection._id), folder?._id]);
+	};
+	const openNewRequest = (collection, folder = null) => {
+		if (collection) guardDraft(() => startDraft(collection, folder));
 	};
 	const duplicateRequest = async (request) => {
 		try {
@@ -483,7 +553,7 @@ export function WorkspaceShell({ account, onLogout }) {
 	const selectedCollection = collections.find((collection) => String(collection._id) === String(selectedCollectionId)) || null;
 	const selectedRequest = Object.values(requestsByCollection).flat().find((item) => String(item._id) === String(selectedRequestId)) || null;
 	const selectedHistoryEntry = history.find((entry) => String(entry._id) === String(selectedHistoryId)) || null;
-	const editing = Boolean(selectedRequest || selectedHistoryEntry);
+	const editing = Boolean(draft || selectedRequest || selectedHistoryEntry);
 	return (
 		<div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
 			<WorkspaceHeader
@@ -521,7 +591,7 @@ export function WorkspaceShell({ account, onLogout }) {
 				onImportFile={importFile}
 				onNewCollection={openNewCollection}
 				onNewFolder={openNewFolder}
-				onNewRequest={createRequest}
+				onNewRequest={openNewRequest}
 				onNewWorkspace={openNewWorkspace}
 				onRenameCollection={openRenameCollection}
 				onRenameFolder={openRenameFolder}
@@ -529,8 +599,8 @@ export function WorkspaceShell({ account, onLogout }) {
 				onRetryCollections={() => loadCollections(selectedId)}
 				onRetryHistory={() => loadHistory(selectedId)}
 				onRetryRequests={(collectionId) => loadRequests(collectionId, true)}
-				onSelect={setSelectedId}
-				onSelectCollection={setSelectedCollectionId}
+				onSelect={selectWorkspace}
+				onSelectCollection={selectCollection}
 				onSelectHistory={selectHistory}
 				onSelectRequest={selectRequest}
 				onSetDefaultWorkspace={setDefaultWorkspace}
@@ -547,8 +617,10 @@ export function WorkspaceShell({ account, onLogout }) {
 			/>
 			{!sidebarCollapsed && <button className="sidebar-scrim" aria-label="Close sidebar" onClick={toggleSidebar} />}
 			<main className={`workspace-surface ${editing ? "editing" : ""}`}>
-				{selectedRequest ? (
-					<RequestEditor key={selectedRequest._id} request={selectedRequest} onSave={(payload) => saveRequest(selectedRequest, payload)} />
+				{draft ? (
+					<RequestEditor key="draft" isDraft request={draft} onDirtyChange={setDraftDirty} onSave={saveDraftToCollection} onSend={sendRequestEditor} />
+				) : selectedRequest ? (
+					<RequestEditor key={selectedRequest._id} request={selectedRequest} onSave={(payload) => saveRequest(selectedRequest, payload)} onSend={sendRequestEditor} />
 				) : selectedHistoryEntry ? (
 					<HistoryDetail
 						key={selectedHistoryEntry._id}
@@ -626,6 +698,26 @@ export function WorkspaceShell({ account, onLogout }) {
 					onCancel={() => { if (!workspaceBusy) { setWorkspaceDeleting(null); setWorkspaceActionError(""); } }}
 					onConfirm={confirmDeleteWorkspace}
 					title="Delete workspace?"
+				/>
+			)}
+			{draftSavePayload && draft && (
+				<SaveToCollectionDialog
+					collections={collections}
+					defaultCollectionId={draft.collectionId}
+					defaultFolderId={draft.folderId}
+					defaultName={draft.name}
+					onClose={() => setDraftSavePayload(null)}
+					onSave={confirmSaveDraft}
+				/>
+			)}
+			{discardAction && (
+				<ConfirmationDialog
+					busy={false}
+					confirmLabel="Discard"
+					message="This request has not been saved. Continuing will discard your changes."
+					onCancel={() => setDiscardAction(null)}
+					onConfirm={() => { const action = discardAction; setDiscardAction(null); action(); }}
+					title="Discard unsaved request?"
 				/>
 			)}
 			{historySaving && (

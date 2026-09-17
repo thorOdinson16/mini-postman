@@ -8,4 +8,5 @@ export const requestApi = {
 	duplicate: (id, payload = {}) => request(`/requests/${id}/duplicate`, { method: "POST", body: JSON.stringify(payload) }),
 	search: (workspaceId, q) => request(`/requests/search?workspaceId=${workspaceId}&q=${encodeURIComponent(q)}`),
 	send: (id) => request(`/requests/${id}/send`, { method: "POST" }),
+	sendAdHoc: (payload) => request("/requests/send", { method: "POST", body: JSON.stringify(payload) }),
 };

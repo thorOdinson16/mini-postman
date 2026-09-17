@@ -1,11 +1,11 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
 import { SelectMenu } from "../../shared/components/SelectMenu.jsx";
 import { createTabList } from "../../shared/utils/a11y.js";
 import { KeyValueEditor, withRowIds } from "./KeyValueEditor.jsx";
 import { RequestAuthEditor } from "./RequestAuthEditor.jsx";
 import { RequestBodyEditor } from "./RequestBodyEditor.jsx";
 import { ResponseViewer } from "./ResponseViewer.jsx";
-import { requestApi } from "./request.api.js";
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"].map((method) => ({ value: method, label: method }));
 const normalizeRows = (rows = []) => withRowIds(rows.map((row) => ({ key: row.key ?? "", value: row.value ?? "", enabled: row.enabled !== false, description: row.description ?? "" })));
@@ -23,7 +23,7 @@ const normalizeAuth = (auth) => ({
 });
 const activeCount = (rows) => rows.filter((row) => row.enabled !== false && row.key.trim()).length;
 
-export function RequestEditor({ onSave, request }) {
+export function RequestEditor({ isDraft = false, onDirtyChange, onSave, onSend, request }) {
 	const initial = {
 		name: request.name ?? "",
 		method: request.method ?? "GET",
@@ -48,6 +48,9 @@ export function RequestEditor({ onSave, request }) {
 		setForm((current) => ({ ...current, ...patch }));
 	};
 	const dirty = JSON.stringify(form) !== JSON.stringify(initial);
+	useEffect(() => {
+		onDirtyChange?.(dirty);
+	}, [dirty, onDirtyChange]);
 	const buildPayload = () => ({
 		name: form.name.trim() || "Untitled request",
 		method: form.method,
@@ -72,6 +75,10 @@ export function RequestEditor({ onSave, request }) {
 	const tabList = createTabList({ ids: tabs.map((entry) => entry.id), activeId: tab, onChange: setTab, ariaLabel: "Request sections", idPrefix: "request-editor", listRef: tabReference });
 	const save = async (event) => {
 		event.preventDefault();
+		if (isDraft) {
+			onSave(buildPayload());
+			return;
+		}
 		try {
 			setSaving(true);
 			setError("");
@@ -89,7 +96,7 @@ export function RequestEditor({ onSave, request }) {
 		setSendError("");
 		setSendResult(null);
 		try {
-			if (dirty) {
+			if (!isDraft && dirty) {
 				try {
 					await onSave(buildPayload());
 					setSaved(true);
@@ -98,7 +105,7 @@ export function RequestEditor({ onSave, request }) {
 					return;
 				}
 			}
-			setSendResult(await requestApi.send(request._id));
+			setSendResult(await onSend(buildPayload()));
 		} catch (sendRequestError) {
 			setSendError(sendRequestError.message || "The request could not be sent.");
 		} finally {
@@ -107,13 +114,20 @@ export function RequestEditor({ onSave, request }) {
 	};
 	return (
 		<div className="request-workspace">
+			{isDraft && (
+				<div className="draft-banner" role="status">
+					<MaterialIcon size={18}>info</MaterialIcon>
+					<span>{sendResult ? "Sent. This request is not saved — save it to keep it." : "This request is not saved."}</span>
+					<button type="button" className="draft-save" disabled={saving || sending} onClick={() => onSave(buildPayload())}>Save</button>
+				</div>
+			)}
 			<form className="request-editor" onSubmit={save}>
 				<div className="request-editor-top">
 					<input className="request-name-input" aria-label="Request name" maxLength={160} placeholder="Request name" value={form.name} onChange={(event) => update({ name: event.target.value })} />
 					{error && <p className="request-editor-error" role="alert">{error}</p>}
-					{saved && !dirty && <p className="request-editor-saved" role="status">Saved</p>}
+					{!isDraft && saved && !dirty && <p className="request-editor-saved" role="status">Saved</p>}
 					<button className="request-send" type="button" disabled={sending || saving} onClick={send}>{sending ? "Sending…" : "Send"}</button>
-					<button className="request-save" type="submit" disabled={saving || sending || !dirty}>{saving ? "Saving…" : "Save"}</button>
+					<button className="request-save" type="submit" disabled={saving || sending || (!isDraft && !dirty)}>{saving ? "Saving…" : "Save"}</button>
 				</div>
 				<div className="request-editor-bar">
 					<SelectMenu ariaLabel="HTTP method" className="method-select" onChange={(method) => update({ method })} options={METHODS} value={form.method} />
@@ -134,7 +148,7 @@ export function RequestEditor({ onSave, request }) {
 					{tab === "auth" && <RequestAuthEditor auth={form.auth} onChange={(auth) => update({ auth })} />}
 				</div>
 			</form>
-			<ResponseViewer error={sendError} result={sendResult} sending={sending} snippetSource={{ requestId: request._id }} />
+			<ResponseViewer error={sendError} result={sendResult} sending={sending} snippetSource={isDraft ? { request: buildPayload() } : { requestId: request._id }} />
 		</div>
 	);
 }

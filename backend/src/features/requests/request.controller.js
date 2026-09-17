@@ -73,6 +73,17 @@ const listSchema = z.object({
 	folderId: z.union([objectId, z.literal("root")]).optional(),
 });
 
+const sendSchema = z.object({
+	workspaceId: objectId,
+	environmentId: objectId.optional(),
+	method,
+	url: z.string().trim().max(2048),
+	queryParams: z.array(keyValueSchema).max(500).default([]),
+	headers: z.array(keyValueSchema).max(500).default([]),
+	body: bodySchema.default({ mode: "none" }),
+	auth: authSchema.default({ type: "none" }),
+});
+
 const orderSchema = z.object({
 	collectionId: objectId,
 	folderId: objectId.nullable().optional(),
@@ -134,6 +145,14 @@ export async function deleteRequest(request, response, next) {
 export async function sendRequest(request, response, next) {
 	try {
 		response.json({ data: await requestService.sendSaved(request.params.requestId) });
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function sendAdHocRequest(request, response, next) {
+	try {
+		response.json({ data: await requestService.sendAdHoc(sendSchema.parse(request.body)) });
 	} catch (error) {
 		next(error);
 	}

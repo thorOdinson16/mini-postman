@@ -17,11 +17,11 @@ function folderOptions(collection) {
 	return options;
 }
 
-export function SaveToCollectionDialog({ collections, defaultName = "", onClose, onSave }) {
+export function SaveToCollectionDialog({ collections, defaultCollectionId = "", defaultFolderId = "", defaultName = "", onClose, onSave }) {
 	const titleId = `save-to-collection-${useId().replace(/:/g, "")}`;
 	const [name, setName] = useState(defaultName);
-	const [collectionId, setCollectionId] = useState(collections[0] ? String(collections[0]._id) : "");
-	const [folderId, setFolderId] = useState("");
+	const [collectionId, setCollectionId] = useState(defaultCollectionId || (collections[0] ? String(collections[0]._id) : ""));
+	const [folderId, setFolderId] = useState(defaultFolderId || "");
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
 	const collection = collections.find((item) => String(item._id) === collectionId);

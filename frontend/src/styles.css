@@ -408,6 +408,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .save-request-actions .save-request-submit:hover { filter: brightness(1.08); }
 .save-request-actions button:disabled { opacity: .7; cursor: default; }
 
+/* Snippets */
+.snippets { display: grid; gap: 14px; }
+.snippets-bar { display: flex; align-items: center; justify-content: space-between; }
+.snippets-title { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; }
+.snippets-refresh { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border: 1px solid var(--border); border-radius: 15px; background: transparent; color: var(--accent); font-size: 12px; font-weight: 500; }
+.snippets-refresh:disabled { opacity: .6; cursor: default; }
+.snippets-refresh:not(:disabled):hover { background: var(--accent-tint); }
+.snippet { display: grid; gap: 6px; }
+.snippet-head { display: flex; align-items: center; justify-content: space-between; }
+.snippet-language { color: var(--ink-strong); font-size: 12px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; }
+.snippet-copy { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid var(--border); border-radius: 14px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 500; }
+.snippet-copy:hover { border-color: var(--faint); color: var(--accent); }
+.snippets-error { display: flex; align-items: center; gap: 10px; color: var(--danger); font-size: 13px; }
+.snippets-error button { height: 28px; padding: 0 12px; border: 0; border-radius: 14px; background: var(--danger); color: #fff; font-size: 12px; font-weight: 500; }
+
 /* Dialogs */
 dialog { padding: 0; border: 0; border-radius: 18px; background: var(--surface); color: var(--ink); }
 dialog::backdrop { background: rgb(0 0 0 / 48%); }

@@ -14,7 +14,7 @@ export function HistoryDetail({ entry, onDelete, onReplay, onSave, replaying = f
 					<button type="button" className="danger" onClick={onDelete}>Delete</button>
 				</div>
 			</div>
-			<ResponseViewer result={{ request: entry.request, response: entry.response }} />
+			<ResponseViewer result={{ request: entry.request, response: entry.response }} snippetSource={{ request: entry.request }} />
 		</section>
 	);
 }

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
+import { snippetsApi } from "../snippets/snippets.api.js";
 
 const formatBytes = (bytes) => {
 	if (!bytes) return "0 B";
@@ -50,9 +52,49 @@ function SentRequest({ request }) {
 	);
 }
 
-export function ResponseViewer({ error, result, sending }) {
+export function ResponseViewer({ error, result, sending, snippetSource = null }) {
 	const [tab, setTab] = useState("body");
 	const [pretty, setPretty] = useState(true);
+	const [snippets, setSnippets] = useState(null);
+	const [snippetsLoading, setSnippetsLoading] = useState(false);
+	const [snippetsError, setSnippetsError] = useState("");
+	const [copied, setCopied] = useState("");
+	const loadSnippets = async () => {
+		if (!snippetSource) return;
+		setSnippetsLoading(true);
+		setSnippetsError("");
+		try {
+			const data = snippetSource.requestId ? await snippetsApi.forRequest(snippetSource.requestId) : await snippetsApi.forPayload(snippetSource.request);
+			setSnippets(data.snippets);
+		} catch (snippetError) {
+			setSnippetsError(snippetError.message);
+		} finally {
+			setSnippetsLoading(false);
+		}
+	};
+	const openTab = (id) => {
+		setTab(id);
+		if (id === "snippets" && snippets === null && !snippetsLoading) loadSnippets();
+	};
+	const copy = async (language, code) => {
+		try {
+			if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(code);
+			else {
+				const area = document.createElement("textarea");
+				area.value = code;
+				area.style.position = "fixed";
+				area.style.opacity = "0";
+				document.body.appendChild(area);
+				area.select();
+				document.execCommand("copy");
+				document.body.removeChild(area);
+			}
+			setCopied(language);
+			setTimeout(() => setCopied((current) => (current === language ? "" : current)), 1600);
+		} catch {
+			setSnippetsError("Copying to the clipboard is unavailable in this browser.");
+		}
+	};
 	if (sending) {
 		return <section className="response-viewer response-idle" role="status"><div className="response-loading"><span className="spinner" />Sending request…</div></section>;
 	}
@@ -76,8 +118,8 @@ export function ResponseViewer({ error, result, sending }) {
 			{response.error && <p className="response-error" role="alert">{response.error}</p>}
 			{response.truncated && <p className="response-note">The response body was truncated at the maximum size.</p>}
 			<div className="editor-tabs" role="tablist" aria-label="Response sections">
-				{[["body", "Body"], ["headers", "Headers"], ["sent", "Sent request"]].map(([id, label]) => (
-					<button key={id} type="button" role="tab" className={tab === id ? "active" : ""} aria-selected={tab === id} onClick={() => setTab(id)}>{label}</button>
+				{[["body", "Body"], ["headers", "Headers"], ["sent", "Sent request"], ["snippets", "Snippets"]].map(([id, label]) => (
+					<button key={id} type="button" role="tab" className={tab === id ? "active" : ""} aria-selected={tab === id} onClick={() => openTab(id)}>{label}</button>
 				))}
 			</div>
 			<div className="response-panel">
@@ -96,6 +138,34 @@ export function ResponseViewer({ error, result, sending }) {
 					<ul className="response-headers">{response.headers.map((header, index) => <li key={index}><span className="response-header-key">{header.key}</span><span className="response-header-value">{header.value}</span></li>)}</ul>
 				) : <p className="response-empty">No response headers.</p>)}
 				{tab === "sent" && <SentRequest request={request} />}
+				{tab === "snippets" && (
+					<div className="snippets">
+						<div className="snippets-bar">
+							<span className="snippets-title">Code snippets</span>
+							<button type="button" className="snippets-refresh" disabled={!snippetSource || snippetsLoading} onClick={loadSnippets}><MaterialIcon size={16}>sync</MaterialIcon><span>{snippetsLoading ? "Generating…" : "Refresh"}</span></button>
+						</div>
+						{!snippetSource ? (
+							<p className="response-empty">Snippets are unavailable for this entry.</p>
+						) : snippetsError ? (
+							<div className="snippets-error" role="alert"><span>{snippetsError}</span><button type="button" onClick={loadSnippets}>Try again</button></div>
+						) : snippetsLoading && !snippets ? (
+							<p className="response-empty">Generating snippets…</p>
+						) : snippets ? (
+							snippets.map((snippet) => (
+								<section className="snippet" key={snippet.language}>
+									<div className="snippet-head">
+										<span className="snippet-language">{snippet.language}</span>
+										<button type="button" className="snippet-copy" onClick={() => copy(snippet.language, snippet.code)}>
+											<MaterialIcon size={16}>{copied === snippet.language ? "check" : "content_copy"}</MaterialIcon>
+											<span aria-live="polite">{copied === snippet.language ? "Copied" : "Copy"}</span>
+										</button>
+									</div>
+									<pre className="response-code">{snippet.code}</pre>
+								</section>
+							))
+						) : null}
+					</div>
+				)}
 			</div>
 		</section>
 	);

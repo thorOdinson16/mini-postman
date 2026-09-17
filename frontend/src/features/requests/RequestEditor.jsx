@@ -130,7 +130,7 @@ export function RequestEditor({ onSave, request }) {
 					{tab === "auth" && <RequestAuthEditor auth={form.auth} onChange={(auth) => update({ auth })} />}
 				</div>
 			</form>
-			<ResponseViewer error={sendError} result={sendResult} sending={sending} />
+			<ResponseViewer error={sendError} result={sendResult} sending={sending} snippetSource={{ requestId: request._id }} />
 		</div>
 	);
 }

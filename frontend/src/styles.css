@@ -132,8 +132,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 /* Collection tree */
 .collection-list, .folder-list { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; }
 .folder-list { margin-left: 13px; padding-left: 6px; border-left: 1px solid var(--divider); }
-.tree-row { display: flex; min-height: 36px; align-items: center; gap: 2px; border-radius: 9px; }
+.tree-row { display: flex; position: relative; min-height: 36px; align-items: center; gap: 2px; border-radius: 9px; -webkit-user-select: none; user-select: none; }
 .tree-row:hover { background: var(--hover); }
+.tree-row.dragging { opacity: .5; }
+.tree-row.drop-before::before, .tree-row.drop-after::after { position: absolute; right: 4px; left: 4px; height: 2px; border-radius: 2px; background: var(--accent); content: ""; }
+.tree-row.drop-before::before { top: -1px; }
+.tree-row.drop-after::after { bottom: -1px; }
+.drag-handle { display: inline-grid; width: 20px; height: 28px; flex: 0 0 auto; padding: 0; place-items: center; border: 0; background: transparent; color: var(--faint); opacity: 0; cursor: grab; touch-action: none; }
+.tree-row:hover .drag-handle, .tree-row.dragging .drag-handle, .drag-handle:focus-visible { opacity: 1; }
+.drag-handle:active { cursor: grabbing; }
+.drag-spacer { width: 20px; flex: 0 0 auto; }
+@media (hover: none) { .drag-handle { opacity: 1; } }
 .collection-row.active { background: var(--accent-tint); }
 .tree-toggle { display: inline-grid; width: 28px; height: 28px; flex: 0 0 auto; padding: 0; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); }
 .tree-toggle:hover { background: var(--hover); color: var(--ink); }
@@ -161,6 +170,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .collection-options-menu { position: fixed; z-index: 200; min-width: 184px; padding: 6px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: 0 8px 24px rgb(0 0 0 / 28%); animation: menu-in 120ms ease-out; }
 .collection-options-menu button { display: flex; width: 100%; min-height: 40px; align-items: center; gap: 12px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--ink-strong); font-size: 14px; text-align: left; }
 .collection-options-menu button:hover, .collection-options-menu button:focus-visible { background: var(--hover); outline: 0; }
+.collection-options-menu button:disabled { color: var(--faint); cursor: default; }
+.collection-options-menu button:disabled:hover { background: transparent; }
+.collection-options-menu button:disabled .material-icon { color: var(--faint); }
 .collection-options-menu .material-icon { color: var(--muted); }
 .collection-options-menu .collection-options-danger { color: var(--danger); }
 .collection-options-menu .collection-options-danger .material-icon { color: var(--danger); }

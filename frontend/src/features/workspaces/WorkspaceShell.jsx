@@ -141,12 +141,32 @@ export function WorkspaceShell({ account, onLogout }) {
 			setDeleteBusy(false);
 		}
 	};
+	const applyCollectionOrder = async (collectionIds) => {
+		try {
+			setCollectionsError("");
+			await collectionApi.reorder(selectedId, collectionIds);
+			await loadCollections(selectedId);
+		} catch (reorderError) {
+			setCollectionsError(reorderError.message);
+		}
+	};
+	const applyFolderOrder = async (collectionId, parentId, folderIds) => {
+		try {
+			setCollectionsError("");
+			await collectionApi.reorderFolders(collectionId, parentId, folderIds);
+			await loadCollections(selectedId);
+		} catch (reorderError) {
+			setCollectionsError(reorderError.message);
+		}
+	};
 	const selectedWorkspace = workspaces.find((workspace) => workspace._id === selectedId) || null;
 	const selectedCollection = collections.find((collection) => String(collection._id) === String(selectedCollectionId)) || null;
 	return (
 		<div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
 			<WorkspaceHeader account={account} onLogout={onLogout} onSidebarToggle={toggleSidebar} />
 			<WorkspaceSidebar
+				onApplyCollectionOrder={applyCollectionOrder}
+				onApplyFolderOrder={applyFolderOrder}
 				collections={collections}
 				collectionsError={collectionsError}
 				collectionsLoading={collectionsLoading}

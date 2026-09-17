@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
 import { snippetsApi } from "../snippets/snippets.api.js";
 import { ResponseBody } from "./ResponseBody.jsx";
@@ -51,6 +51,11 @@ export function ResponseViewer({ error, result, sending, snippetSource = null })
 	const [snippetsLoading, setSnippetsLoading] = useState(false);
 	const [snippetsError, setSnippetsError] = useState("");
 	const [copied, setCopied] = useState("");
+	useEffect(() => {
+		setSnippets(null);
+		setSnippetsError("");
+		setCopied("");
+	}, [result]);
 	const loadSnippets = async () => {
 		if (!snippetSource) return;
 		setSnippetsLoading(true);
@@ -114,8 +119,8 @@ export function ResponseViewer({ error, result, sending, snippetSource = null })
 			</div>
 			<div className="response-panel">
 				{tab === "body" && (response.body ? <ResponseBody body={response.body} /> : <p className="response-empty">No response body.</p>)}
-				{tab === "headers" && (response.headers.length ? (
-					<ul className="response-headers">{response.headers.map((header, index) => <li key={index}><span className="response-header-key">{header.key}</span><span className="response-header-value">{header.value}</span></li>)}</ul>
+				{tab === "headers" && ((response.headers || []).length ? (
+					<ul className="response-headers">{(response.headers || []).map((header, index) => <li key={index}><span className="response-header-key">{header.key}</span><span className="response-header-value">{header.value}</span></li>)}</ul>
 				) : <p className="response-empty">No response headers.</p>)}
 				{tab === "sent" && <SentRequest request={request} />}
 				{tab === "snippets" && (

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
-import { OptionsMenu } from "./OptionsMenu.jsx";
+import { OptionsMenu } from "../../shared/components/OptionsMenu.jsx";
 import { buildFolderTree, moveInList, reorderIds, siblingsOf } from "./collection-tree.js";
 
 const dragKey = (kind, id) => `${kind}:${id}`;
@@ -14,7 +14,7 @@ const requestsFor = (requests, folderId) =>
 		.filter((item) => (item.folderId ? String(item.folderId) : null) === (folderId ? String(folderId) : null))
 		.sort((left, right) => (left.order ?? 0) - (right.order ?? 0));
 
-function RequestsList({ collectionId, onSelectRequest, requests, selectedRequestId }) {
+function RequestsList({ collectionId, onOpenMenu, onSelectRequest, requests, selectedRequestId }) {
 	return (
 		<ul className="folder-list">
 			{requests.map((item) => {
@@ -28,6 +28,7 @@ function RequestsList({ collectionId, onSelectRequest, requests, selectedRequest
 								<span className={`method-badge method-${String(item.method).toLowerCase()}`}>{item.method}</span>
 								<span className="tree-name">{item.name}</span>
 							</button>
+							<button className="collection-menu-button" aria-haspopup="menu" aria-label={`More options for ${item.name}`} onClick={(event) => onOpenMenu(event, { key: dragKey("request", item._id), kind: "request", collectionId, request: item })}><MaterialIcon size={18}>more_vert</MaterialIcon></button>
 						</div>
 					</li>
 				);
@@ -85,7 +86,7 @@ function FolderBranch({ collection, collectionRequests, draggingKey, dropTarget,
 							)}
 						</TreeRow>
 						{expanded && children.length > 0 && <FolderBranch collection={collection} collectionRequests={collectionRequests} draggingKey={draggingKey} dropTarget={dropTarget} expandedIds={expandedIds} nodes={children} onDragCancel={onDragCancel} onDragEnd={onDragEnd} onDragMove={onDragMove} onDragStart={onDragStart} onOpenMenu={onOpenMenu} onSelectRequest={onSelectRequest} onToggle={onToggle} selectedRequestId={selectedRequestId} />}
-						{expanded && folderRequests.length > 0 && <RequestsList collectionId={String(collection._id)} onSelectRequest={onSelectRequest} requests={folderRequests} selectedRequestId={selectedRequestId} />}
+						{expanded && folderRequests.length > 0 && <RequestsList collectionId={String(collection._id)} onOpenMenu={onOpenMenu} onSelectRequest={onSelectRequest} requests={folderRequests} selectedRequestId={selectedRequestId} />}
 					</li>
 				);
 			})}
@@ -93,7 +94,7 @@ function FolderBranch({ collection, collectionRequests, draggingKey, dropTarget,
 	);
 }
 
-export function CollectionTree({ collections, error, expandedIds, loading, onApplyCollectionOrder, onApplyFolderOrder, onDeleteCollection, onDeleteFolder, onDuplicateCollection, onExportCollection, onNewFolder, onRenameCollection, onRenameFolder, onRetry, onSelect, onSelectRequest, onToggle, requestsByCollection, requestsLoading, selectedId, selectedRequestId }) {
+export function CollectionTree({ collections, error, expandedIds, loading, onApplyCollectionOrder, onApplyFolderOrder, onDeleteCollection, onDeleteFolder, onDeleteRequest, onDuplicateCollection, onDuplicateRequest, onExportCollection, onNewFolder, onNewRequest, onRenameCollection, onRenameFolder, onRetry, onRetryRequests, onSelect, onSelectRequest, onToggle, requestsByCollection, requestsError, requestsLoading, selectedId, selectedRequestId }) {
 	const [menu, setMenu] = useState(null);
 	const [draggingKey, setDraggingKey] = useState(null);
 	const [dropTarget, setDropTarget] = useState(null);
@@ -101,7 +102,7 @@ export function CollectionTree({ collections, error, expandedIds, loading, onApp
 	const collectionIds = collections.map((item) => String(item._id));
 	const openMenu = (event, descriptor) => {
 		const rectangle = event.currentTarget.getBoundingClientRect();
-		setMenu((current) => (current?.key === descriptor.key ? null : { ...descriptor, position: { left: Math.min(rectangle.right + 8, window.innerWidth - 220), top: Math.max(8, Math.min(rectangle.bottom + 4, window.innerHeight - 190)) } }));
+		setMenu((current) => (current?.key === descriptor.key ? null : { ...descriptor, position: { left: Math.min(rectangle.right + 8, window.innerWidth - 220), top: Math.max(8, Math.min(rectangle.bottom + 4, window.innerHeight - 240)) } }));
 	};
 	const moveCollection = (collection, direction) => {
 		const next = moveInList(collectionIds, String(collection._id), direction);
@@ -197,6 +198,7 @@ export function CollectionTree({ collections, error, expandedIds, loading, onApp
 		const index = collectionIds.indexOf(String(collection._id));
 		return [
 			{ icon: "add", label: "New folder", onSelect: () => onNewFolder(collection) },
+			{ icon: "add", label: "New request", onSelect: () => onNewRequest(collection) },
 			{ icon: "content_copy", label: "Duplicate", onSelect: () => onDuplicateCollection(collection) },
 			{ icon: "arrow_upward", label: "Move up", disabled: index <= 0, onSelect: () => moveCollection(collection, -1) },
 			{ icon: "arrow_downward", label: "Move down", disabled: index >= collectionIds.length - 1, onSelect: () => moveCollection(collection, 1) },
@@ -210,12 +212,17 @@ export function CollectionTree({ collections, error, expandedIds, loading, onApp
 		const index = siblings.findIndex((item) => String(item._id) === String(folder._id));
 		return [
 			{ icon: "add", label: "New subfolder", onSelect: () => onNewFolder(collection, folder) },
+			{ icon: "add", label: "New request", onSelect: () => onNewRequest(collection, folder) },
 			{ icon: "arrow_upward", label: "Move up", disabled: index <= 0, onSelect: () => moveFolder(collection, folder, -1) },
 			{ icon: "arrow_downward", label: "Move down", disabled: index >= siblings.length - 1, onSelect: () => moveFolder(collection, folder, 1) },
 			{ icon: "edit", label: "Rename", onSelect: () => onRenameFolder(collection, folder) },
 			{ icon: "delete", label: "Delete", danger: true, onSelect: () => onDeleteFolder(collection, folder) },
 		];
 	};
+	const requestItems = (request) => [
+		{ icon: "content_copy", label: "Duplicate", onSelect: () => onDuplicateRequest(request) },
+		{ icon: "delete", label: "Delete", danger: true, onSelect: () => onDeleteRequest(request) },
+	];
 	if (loading) return <div className="collection-skeleton" aria-hidden="true"><span /><span /><span /></div>;
 	if (error) return <div className="sidebar-error" role="alert"><span>{error}</span><button onClick={onRetry}>Try again</button></div>;
 	if (!collections.length) return <p className="sidebar-empty">No collections yet</p>;
@@ -228,6 +235,7 @@ export function CollectionTree({ collections, error, expandedIds, loading, onApp
 				const collectionRequests = requestsByCollection[id] || [];
 				const rootRequests = requestsFor(collectionRequests, null);
 				const loadingRequests = Boolean(requestsLoading[id]);
+				const requestsLoadError = requestsError?.[id];
 				return (
 					<li key={id}>
 						<TreeRow className={`collection-row ${id === selectedId ? "active" : ""}`} descriptor={descriptorFor(collection)} draggingKey={draggingKey} dropTarget={dropTarget} onDragCancel={cancelDrag} onDragEnd={finishDrag} onDragMove={onDragMove} onDragStart={onDragStart}>
@@ -245,11 +253,12 @@ export function CollectionTree({ collections, error, expandedIds, loading, onApp
 						</TreeRow>
 						{expanded && hasFolders && <FolderBranch collection={collection} collectionRequests={collectionRequests} draggingKey={draggingKey} dropTarget={dropTarget} expandedIds={expandedIds} nodes={buildFolderTree(collection.folders)} onDragCancel={cancelDrag} onDragEnd={finishDrag} onDragMove={onDragMove} onDragStart={onDragStart} onOpenMenu={openMenu} onSelectRequest={onSelectRequest} onToggle={onToggle} selectedRequestId={selectedRequestId} />}
 						{expanded && loadingRequests && <ul className="folder-list"><li className="tree-loading">Loading requests…</li></ul>}
-						{expanded && !loadingRequests && rootRequests.length > 0 && <RequestsList collectionId={id} onSelectRequest={onSelectRequest} requests={rootRequests} selectedRequestId={selectedRequestId} />}
+						{expanded && !loadingRequests && requestsLoadError && <div className="sidebar-error" role="alert"><span>{requestsLoadError}</span><button onClick={() => onRetryRequests(id)}>Try again</button></div>}
+						{expanded && !loadingRequests && !requestsLoadError && rootRequests.length > 0 && <RequestsList collectionId={id} onOpenMenu={openMenu} onSelectRequest={onSelectRequest} requests={rootRequests} selectedRequestId={selectedRequestId} />}
 					</li>
 				);
 			})}
-			{menu && <OptionsMenu ariaLabel={`${menu.kind === "folder" ? menu.folder.name : menu.collection.name} options`} items={menu.kind === "folder" ? folderItems(menu.collection, menu.folder) : collectionItems(menu.collection)} onClose={() => setMenu(null)} position={menu.position} />}
+			{menu && <OptionsMenu ariaLabel={menu.kind === "request" ? `${menu.request.name} options` : menu.kind === "folder" ? `${menu.folder.name} options` : `${menu.collection.name} options`} items={menu.kind === "request" ? requestItems(menu.request) : menu.kind === "folder" ? folderItems(menu.collection, menu.folder) : collectionItems(menu.collection)} onClose={() => setMenu(null)} position={menu.position} />}
 		</ul>
 	);
 }

@@ -16,6 +16,7 @@ export const environmentRepository = {
 	clearActive: (workspaceId, excludedId) =>
 		Environment.updateMany({ workspaceId, _id: { $ne: excludedId }, isActive: true }, { $set: { isActive: false } }),
 	remove: (id) => Environment.findByIdAndDelete(id).lean(),
+	removeByWorkspace: (workspaceId) => Environment.deleteMany({ workspaceId }),
 	deleteAll: () => Environment.deleteMany({}),
 	insertMany: (items) => Environment.insertMany(items),
 };

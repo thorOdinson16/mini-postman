@@ -43,6 +43,7 @@ export function RequestEditor({ onSave, request }) {
 	const update = (patch) => {
 		setSaved(false);
 		setSendError("");
+		setSendResult(null);
 		setForm((current) => ({ ...current, ...patch }));
 	};
 	const dirty = JSON.stringify(form) !== JSON.stringify(initial);

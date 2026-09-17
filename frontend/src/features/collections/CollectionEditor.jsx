@@ -5,6 +5,7 @@ import { Modal } from "../../shared/components/Modal.jsx";
 export function CollectionEditor({ collection = null, kind = "collection", parentName = "", onClose, onSave }) {
 	const titleId = `collection-editor-${useId().replace(/:/g, "")}`;
 	const isFolder = kind === "folder";
+	const noun = kind === "folder" ? "folder" : kind === "workspace" ? "workspace" : "collection";
 	const editing = Boolean(collection);
 	const [name, setName] = useState(collection?.name || "");
 	const [description, setDescription] = useState(isFolder ? "" : collection?.description || "");
@@ -14,7 +15,7 @@ export function CollectionEditor({ collection = null, kind = "collection", paren
 		event.preventDefault();
 		const values = { name: name.trim(), ...(isFolder ? {} : { description: description.trim() }) };
 		if (!values.name) {
-			setError(`Enter a ${isFolder ? "folder" : "collection"} name.`);
+			setError(`Enter a ${noun} name.`);
 			return;
 		}
 		try {
@@ -22,7 +23,7 @@ export function CollectionEditor({ collection = null, kind = "collection", paren
 			setError("");
 			await onSave(values);
 		} catch (saveError) {
-			setError(saveError.message || `The ${isFolder ? "folder" : "collection"} could not be saved.`);
+			setError(saveError.message || `The ${noun} could not be saved.`);
 		} finally {
 			setBusy(false);
 		}
@@ -30,7 +31,7 @@ export function CollectionEditor({ collection = null, kind = "collection", paren
 	return createPortal(
 		<Modal className="collection-editor-modal" labelledBy={titleId} onClose={() => { if (!busy) onClose(); }}>
 			<section className="collection-editor">
-				<h2 id={titleId}>{editing ? "Rename" : "New"} {isFolder ? "folder" : "collection"}</h2>
+				<h2 id={titleId}>{editing ? "Rename" : "New"} {noun}</h2>
 				{isFolder && parentName && <p className="collection-editor-context">in {parentName}</p>}
 				<form onSubmit={submit}>
 					<div className="outlined-input">

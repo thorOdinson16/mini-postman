@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
+import { MaterialIcon } from "./MaterialIcon.jsx";
 
 export function OptionsMenu({ ariaLabel, items, onClose, position }) {
 	const reference = useRef(null);

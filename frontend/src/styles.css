@@ -142,7 +142,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tree-row:hover .drag-handle, .tree-row.dragging .drag-handle, .drag-handle:focus-visible { opacity: 1; }
 .drag-handle:active { cursor: grabbing; }
 .drag-spacer { width: 20px; flex: 0 0 auto; }
-@media (hover: none) { .drag-handle { opacity: 1; } }
+@media (hover: none) { .drag-handle, .collection-menu-button { opacity: 1; } }
 .collection-row.active { background: var(--accent-tint); }
 .tree-toggle { display: inline-grid; width: 28px; height: 28px; flex: 0 0 auto; padding: 0; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); }
 .tree-toggle:hover { background: var(--hover); color: var(--ink); }
@@ -168,6 +168,20 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .collection-menu-button { display: inline-grid; width: 28px; height: 28px; flex: 0 0 auto; margin-right: 3px; padding: 0; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); opacity: 0; transition: opacity 120ms ease, background 120ms ease; }
 .tree-row:hover .collection-menu-button, .collection-row.active .collection-menu-button, .collection-menu-button:focus-visible { opacity: 1; }
 .collection-menu-button:hover { background: var(--hover); color: var(--ink); }
+.workspace-row { gap: 2px; }
+.workspace-row .workspace-option { flex: 1; min-width: 0; }
+.workspace-row.active { background: var(--accent-tint); }
+.sidebar-search { display: flex; height: 34px; align-items: center; gap: 6px; margin: 0 4px; padding: 0 6px 0 10px; border: 1px solid var(--border); border-radius: 17px; background: var(--surface-muted); color: var(--muted); }
+.sidebar-search input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: var(--ink-strong); font-size: 13px; }
+.sidebar-search button { display: grid; width: 24px; height: 24px; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); }
+.sidebar-search button:hover { background: var(--hover); color: var(--ink); }
+.search-results { display: grid; gap: 2px; }
+.search-result { display: flex; width: 100%; align-items: center; gap: 8px; padding: 8px 10px; border: 0; border-radius: 10px; background: transparent; text-align: left; }
+.search-result:hover { background: var(--hover); }
+.search-result .material-icon { color: var(--muted); }
+.search-result-name { min-width: 0; flex: 1; overflow: hidden; color: var(--ink); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.search-result-kind { color: var(--quiet); font-size: 10.5px; letter-spacing: .4px; text-transform: uppercase; }
+.workspace-loading { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }
 .collection-options-menu { position: fixed; z-index: 200; min-width: 184px; padding: 6px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: 0 8px 24px rgb(0 0 0 / 28%); animation: menu-in 120ms ease-out; }
 .collection-options-menu button { display: flex; width: 100%; min-height: 40px; align-items: center; gap: 12px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--ink-strong); font-size: 14px; text-align: left; }
 .collection-options-menu button:hover, .collection-options-menu button:focus-visible { background: var(--hover); outline: 0; }

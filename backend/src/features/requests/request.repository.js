@@ -40,6 +40,7 @@ export const requestRepository = {
 			})),
 		),
 	deleteByCollection: (collectionId) => Request.deleteMany({ collectionId }),
+	deleteByCollections: (collectionIds) => Request.deleteMany({ collectionId: { $in: collectionIds } }),
 	remove: (id) => Request.findByIdAndDelete(id).lean(),
 	deleteAll: () => Request.deleteMany({}),
 	insertMany: (items) => Request.insertMany(items),

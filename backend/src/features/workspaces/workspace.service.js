@@ -1,5 +1,9 @@
 import mongoose from "mongoose";
 import { AppError } from "../../shared/errors/app-error.js";
+import { collectionRepository } from "../collections/collection.repository.js";
+import { environmentRepository } from "../environments/environment.repository.js";
+import { historyRepository } from "../history/history.repository.js";
+import { requestRepository } from "../requests/request.repository.js";
 import { workspaceRepository } from "./workspace.repository.js";
 
 function ensureId(id) {
@@ -62,6 +66,11 @@ export const workspaceService = {
 			if (!replacement) throw new AppError(409, "DEFAULT_WORKSPACE", "The only workspace cannot be deleted.");
 			await workspaceRepository.update(replacement._id, { isDefault: true });
 		}
+		const collectionIds = (await collectionRepository.listIdsByWorkspace(id)).map((collection) => collection._id);
+		if (collectionIds.length) await requestRepository.deleteByCollections(collectionIds);
+		await collectionRepository.removeByWorkspace(id);
+		await environmentRepository.removeByWorkspace(id);
+		await historyRepository.removeByWorkspace(id);
 		await workspaceRepository.remove(id);
 	},
 };

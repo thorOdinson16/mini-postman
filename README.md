@@ -1,24 +1,93 @@
-# Build Your Own Postman
+# Postman
 
-Build a full-stack React + Express (Node/MERN) Postman-inspired API app with five to ten end-to-end features for creating, organizing, sending, and analyzing HTTP requests, backed by MongoDB and a polished, accessible UI. The app must preserve the sample calendar repo's stack, install/build/start cleanly, and satisfy the acceptance criteria and verifier.
+A full-stack, Postman-inspired API workspace for composing, organizing, sending, and analyzing HTTP requests. It keeps the React + Express (MERN) stack of the sample calendar repo and persists everything in MongoDB.
 
-The app will be built in this repository, following the guidelines given. Start by reading the files in the order below.
+## Built With
 
-## Read in this order
+- [React 19](https://react.dev/) and [Vite 8](https://vite.dev/) for the frontend
+- [Bun](https://bun.sh/) for workspace installation and JavaScript execution
+- [Express 5](https://expressjs.com/) for the HTTP API
+- [MongoDB](https://www.mongodb.com/) and [Mongoose](https://mongoosejs.com/) for persistence
+- [Zod](https://zod.dev/) for request validation
+- [JSON Web Tokens](https://jwt.io/) and [bcrypt](https://github.com/dcodeIO/bcrypt.js) for authentication
 
-1. **[REQUIREMENTS.md](REQUIREMENTS.md)** says what to build. The feature list, the acceptance criteria, and the submission checklist.
-2. **[INSTRUCTIONS.md](INSTRUCTIONS.md)** says how to start and how to keep the repo clean. It identifies the Node calendar repo to clone and study, along with the server setup rules, dependency rules, and code hygiene.
-3. **[AGENTS.md](AGENTS.md)** turns on transcript logging for this app repository. Read it before you open an AI assistant; it records every turn to a log file that you later export under `/transcripts`.
-4. **[GUIDELINES.md](GUIDELINES.md)** is the acceptance contract. Every rule the verifier checks is written here.
-5. **[skills/validate/SKILL.md](skills/validate/SKILL.md)** is the verifier. Run it when you are done. It audits structure, stack, dependencies, install, build, start, API behavior, and MongoDB persistence, and it must pass before you submit.
+## Features
 
-## Sample repo
+- **Workspaces** — create, rename, set default, and delete isolated workspaces; data is grouped per workspace.
+- **Collections and folders** — nested collection/folder tree with create, rename, delete, duplicate, drag-and-drop reorder, and a non-empty delete guard.
+- **Request builder** — request editor with method, URL, query params, headers, body (none/JSON/text/form data/URL-encoded), and auth (none/bearer/basic/API key).
+- **Send and analyze** — real HTTP calls resolved against the active environment, with status, timing, size, headers, a collapsible JSON body, and in-body search.
+- **Environments** — named variable sets with secrets; one active environment per workspace resolved at send time.
+- **History** — every send is recorded; re-open, replay, save into a collection, delete, or clear.
+- **Code snippets** — curl, fetch, node, and python for any request (also available from history).
+- **Import / export** — export a collection as a Postman Collection v2.1 file and import one back.
+- **Authentication** — JWT sign-in required for all product routes.
+- **Full-text search** — search collections and requests within the active workspace.
 
-| Stack | Repo |
-|---|---|
-| React + Express (MERN) | https://github.com/ProblemSetters/coderepo-react-node-calendar |
+## Project Structure
 
-## Seeded access
+```text
+.
+├── backend/                     # Express API, business logic, and MongoDB persistence
+│   ├── public/                  # Landing page and favicon served at /
+│   └── src/
+│       ├── app.js               # Express app, middleware, route mounting
+│       ├── index.js             # Server bootstrap (config, database, listen)
+│       ├── features/            # Product domains (auth, workspaces, collections,
+│       │                        #   requests, environments, history, snippets, import-export)
+│       ├── scripts/             # Deterministic seed data
+│       └── shared/              # Config, middleware, schemas, errors, utilities
+├── frontend/                    # React app (Vite)
+│   ├── index.html               # Vite entry with pre-paint theme bootstrap
+│   ├── public/                  # Local static media (favicon)
+│   └── src/
+│       ├── App.jsx              # Auth gate and session restore
+│       ├── features/            # Product views (auth, workspaces, collections,
+│       │                        #   requests, environments, history, snippets, import-export)
+│       ├── shared/              # API client, reusable components, utilities
+│       └── styles.css           # Design system and component styles
+├── .vscode/launch.json          # Backend debugger configuration
+├── hackerrank.yml               # HackerRank install and run configuration
+└── setup.sh                     # MongoDB readiness, environment files, and seed reset
+```
+
+## Prerequisites
+
+- Bun 1.3 or later
+- MongoDB 8.0 or later on `127.0.0.1:27017`
+
+## MongoDB Behavior
+
+- The API connects to the database named in `MONGODB_URI` (`postman_db` by default).
+- `setup.sh` verifies MongoDB is reachable (starting it when possible), creates missing `.env` files from the committed `.env.example` files, and runs the deterministic seed.
+- The seed clears the application collections (`Workspace`, `Environment`, `Collection`, `Request`, `HistoryEntry`, `WorkspaceAccount`) and inserts a fixed baseline, so every restart restores the same known state.
+- Health at `GET /api/v1/health` reports both the API and the live database connection.
+
+## Getting Started
+
+### Development Setup
+
+1. Clone the repository and open the project directory.
+
+2. Install the pinned workspaces.
+
+   ```bash
+   bun install
+   ```
+
+3. Start the complete application.
+
+   ```bash
+   bun start
+   ```
+
+   Startup checks MongoDB, restores the seeded baseline, and launches the frontend and backend together.
+
+4. Open [http://localhost:3000](http://localhost:3000) and sign in.
+
+The frontend runs on port `3000`, the API runs on port `8000`, and health is available at [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health).
+
+## Seeded Access
 
 The database seeds one sign-in account on every start:
 
@@ -28,3 +97,14 @@ Password: password123
 ```
 
 Authenticate with `POST /api/v1/auth/login` and send the returned token as `Authorization: Bearer <token>` on every other `/api/v1` route.
+
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `bun start` | Seeds MongoDB and starts the frontend and backend together. |
+| `bun run seed` | Restores the deterministic MongoDB baseline. |
+| `bun run dev:backend` | Starts only the Express API on port `8000`. |
+| `bun run dev:frontend` | Starts only Vite on port `3000`. |
+
+HackerRank installs the application with `bun install && bash setup.sh --seed` and runs it with `bun start`.

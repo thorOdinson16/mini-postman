@@ -8,7 +8,7 @@ export function Modal({ children, className = "", label = "Postman dialog", labe
 	}, [onClose]);
 	useEffect(() => {
 		const dialog = reference.current;
-		dialog.showModal();
+		if (!dialog.open) dialog.showModal();
 		window.requestAnimationFrame(() => dialog.querySelector("[autofocus], [data-autofocus]")?.focus());
 		const cancel = (event) => {
 			event.preventDefault();

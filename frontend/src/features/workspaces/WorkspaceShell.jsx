@@ -4,9 +4,9 @@ import { CollectionEditor } from "../collections/CollectionEditor.jsx";
 import { environmentApi } from "../environments/environment.api.js";
 import { EnvironmentManager } from "../environments/EnvironmentManager.jsx";
 import { historyApi } from "../history/history.api.js";
-import { importExportApi } from "../import-export/import-export.api.js";
 import { HistoryDetail } from "../history/HistoryDetail.jsx";
 import { SaveToCollectionDialog } from "../history/SaveToCollectionDialog.jsx";
+import { importExportApi } from "../import-export/import-export.api.js";
 import { requestApi } from "../requests/request.api.js";
 import { RequestEditor } from "../requests/RequestEditor.jsx";
 import { ConfirmationDialog } from "../../shared/components/ConfirmationDialog.jsx";
@@ -31,6 +31,7 @@ export function WorkspaceShell({ account, onLogout }) {
 	const [selectedCollectionId, setSelectedCollectionId] = useState(() => localStorage.getItem("postman-collection-id") || "");
 	const [requestsByCollection, setRequestsByCollection] = useState({});
 	const [requestsLoading, setRequestsLoading] = useState({});
+	const [requestsError, setRequestsError] = useState({});
 	const [selectedRequestId, setSelectedRequestId] = useState("");
 	const [environments, setEnvironments] = useState([]);
 	const [environmentsError, setEnvironmentsError] = useState("");
@@ -47,6 +48,13 @@ export function WorkspaceShell({ account, onLogout }) {
 	const [historyActionError, setHistoryActionError] = useState("");
 	const [replaying, setReplaying] = useState(false);
 	const [transferError, setTransferError] = useState("");
+	const [requestDeleting, setRequestDeleting] = useState(null);
+	const [requestBusy, setRequestBusy] = useState(false);
+	const [requestActionError, setRequestActionError] = useState("");
+	const [workspaceEditor, setWorkspaceEditor] = useState(null);
+	const [workspaceDeleting, setWorkspaceDeleting] = useState(null);
+	const [workspaceBusy, setWorkspaceBusy] = useState(false);
+	const [workspaceActionError, setWorkspaceActionError] = useState("");
 	const loadedCollections = useRef(new Set());
 	const [expandedIds, setExpandedIds] = useState(() => new Set());
 	const [editor, setEditor] = useState(null);
@@ -100,9 +108,11 @@ export function WorkspaceShell({ account, onLogout }) {
 		try {
 			const list = await requestApi.list(collectionId);
 			setRequestsByCollection((current) => ({ ...current, [collectionId]: list }));
-		} catch {
+			setRequestsError((current) => ({ ...current, [collectionId]: "" }));
+		} catch (requestError) {
 			loadedCollections.current.delete(collectionId);
 			setRequestsByCollection((current) => ({ ...current, [collectionId]: [] }));
+			setRequestsError((current) => ({ ...current, [collectionId]: requestError.message }));
 		} finally {
 			setRequestsLoading((current) => ({ ...current, [collectionId]: false }));
 		}
@@ -150,6 +160,7 @@ export function WorkspaceShell({ account, onLogout }) {
 		loadedCollections.current = new Set();
 		setRequestsByCollection({});
 		setRequestsLoading({});
+		setRequestsError({});
 		setSelectedRequestId("");
 		setSelectedHistoryId("");
 		setSidebarTab("collections");
@@ -181,6 +192,11 @@ export function WorkspaceShell({ account, onLogout }) {
 		});
 		if (willExpand && isCollection) loadRequests(id);
 	};
+	const expand = (ids) => setExpandedIds((current) => {
+		const next = new Set(current);
+		for (const id of ids) if (id) next.add(String(id));
+		return next;
+	});
 	const activeEnvironment = environments.find((environment) => environment.isActive) || null;
 	const activateEnvironment = async (id) => {
 		try {
@@ -229,17 +245,12 @@ export function WorkspaceShell({ account, onLogout }) {
 	const saveHistory = async (entry, payload) => {
 		const created = await historyApi.save(entry._id, payload);
 		await loadCollections(selectedId);
-		await loadRequests(created.collectionId, true);
+		await loadRequests(String(created.collectionId), true);
 		setSelectedCollectionId(String(created.collectionId));
 		setSelectedRequestId(String(created._id));
 		setSelectedHistoryId("");
 		setSidebarTab("collections");
-		setExpandedIds((current) => {
-			const next = new Set(current);
-			next.add(String(created.collectionId));
-			if (created.folderId) next.add(String(created.folderId));
-			return next;
-		});
+		expand([String(created.collectionId), created.folderId]);
 		setHistorySaving(null);
 	};
 	const confirmDeleteHistory = async () => {
@@ -272,7 +283,7 @@ export function WorkspaceShell({ account, onLogout }) {
 	};
 	const saveRequest = async (requestItem, payload) => {
 		const updated = await requestApi.update(requestItem._id, payload);
-		await loadRequests(requestItem.collectionId, true);
+		await loadRequests(String(requestItem.collectionId), true);
 		setSelectedRequestId(String(updated._id));
 	};
 	const openNewCollection = () => setEditor({ kind: "collection", mode: "create" });
@@ -287,6 +298,13 @@ export function WorkspaceShell({ account, onLogout }) {
 		setDeleteError("");
 		setDeleting({ kind: "folder", collectionId: collection._id, folder });
 	};
+	const resetRequests = () => {
+		loadedCollections.current = new Set();
+		setRequestsByCollection({});
+		setRequestsLoading({});
+		setRequestsError({});
+		setSelectedRequestId("");
+	};
 	const saveEditor = async (values) => {
 		if (editor.kind === "folder") {
 			if (editor.mode === "edit") {
@@ -294,12 +312,7 @@ export function WorkspaceShell({ account, onLogout }) {
 				await loadCollections(selectedId);
 			} else {
 				await collectionApi.addFolder(editor.collectionId, { name: values.name, parentId: editor.parentId });
-				setExpandedIds((current) => {
-					const next = new Set(current);
-					next.add(String(editor.collectionId));
-					if (editor.parentId) next.add(String(editor.parentId));
-					return next;
-				});
+				expand([editor.collectionId, editor.parentId]);
 				await loadCollections(selectedId);
 			}
 		} else if (editor.mode === "edit") {
@@ -318,6 +331,7 @@ export function WorkspaceShell({ account, onLogout }) {
 			setDeleteError("");
 			if (deleting.kind === "folder") await collectionApi.removeFolder(deleting.collectionId, deleting.folder._id);
 			else await collectionApi.remove(deleting.collection._id);
+			resetRequests();
 			await loadCollections(selectedId);
 			setDeleting(null);
 		} catch (deleteRequestError) {
@@ -342,6 +356,91 @@ export function WorkspaceShell({ account, onLogout }) {
 			await loadCollections(selectedId);
 		} catch (reorderError) {
 			setCollectionsError(reorderError.message);
+		}
+	};
+	const duplicateCollection = async (collection) => {
+		try {
+			setCollectionsError("");
+			const created = await collectionApi.duplicate(collection._id);
+			await loadCollections(selectedId);
+			setSelectedCollectionId(created._id);
+		} catch (duplicateError) {
+			setCollectionsError(duplicateError.message);
+		}
+	};
+	const createRequest = async (collection, folder = null) => {
+		try {
+			setCollectionsError("");
+			const created = await requestApi.create({ collectionId: String(collection._id), folderId: folder ? String(folder._id) : null, name: "New request", method: "GET", url: "" });
+			await loadRequests(String(collection._id), true);
+			setSelectedCollectionId(String(collection._id));
+			setSelectedRequestId(String(created._id));
+			setSelectedHistoryId("");
+			expand([String(collection._id), folder?._id]);
+		} catch (createError) {
+			setRequestsError((current) => ({ ...current, [String(collection._id)]: createError.message }));
+		}
+	};
+	const duplicateRequest = async (request) => {
+		try {
+			const created = await requestApi.duplicate(request._id);
+			await loadRequests(String(request.collectionId), true);
+			setSelectedCollectionId(String(request.collectionId));
+			setSelectedRequestId(String(created._id));
+			setSelectedHistoryId("");
+		} catch (duplicateError) {
+			setRequestsError((current) => ({ ...current, [String(request.collectionId)]: duplicateError.message }));
+		}
+	};
+	const requestDeleteRequest = (request) => {
+		setRequestActionError("");
+		setRequestDeleting(request);
+	};
+	const confirmDeleteRequest = async () => {
+		try {
+			setRequestBusy(true);
+			setRequestActionError("");
+			await requestApi.remove(requestDeleting._id);
+			await loadRequests(String(requestDeleting.collectionId), true);
+			if (String(selectedRequestId) === String(requestDeleting._id)) setSelectedRequestId("");
+			setRequestDeleting(null);
+		} catch (requestDeleteError) {
+			setRequestActionError(requestDeleteError.message);
+		} finally {
+			setRequestBusy(false);
+		}
+	};
+	const openNewWorkspace = () => setWorkspaceEditor({ mode: "create" });
+	const openRenameWorkspace = (workspace) => setWorkspaceEditor({ mode: "edit", workspace });
+	const saveWorkspace = async (values) => {
+		if (workspaceEditor.mode === "edit") await workspaceApi.update(workspaceEditor.workspace._id, values);
+		else await workspaceApi.create(values);
+		await loadWorkspaces();
+		setWorkspaceEditor(null);
+	};
+	const setDefaultWorkspace = async (workspace) => {
+		try {
+			await workspaceApi.update(workspace._id, { isDefault: true });
+			await loadWorkspaces();
+		} catch (defaultError) {
+			setError(defaultError.message);
+		}
+	};
+	const requestDeleteWorkspace = (workspace) => {
+		setWorkspaceActionError("");
+		setWorkspaceDeleting(workspace);
+	};
+	const confirmDeleteWorkspace = async () => {
+		try {
+			setWorkspaceBusy(true);
+			setWorkspaceActionError("");
+			await workspaceApi.remove(workspaceDeleting._id);
+			await loadWorkspaces();
+			setWorkspaceDeleting(null);
+		} catch (workspaceDeleteError) {
+			setWorkspaceActionError(workspaceDeleteError.message);
+		} finally {
+			setWorkspaceBusy(false);
 		}
 	};
 	const exportCollection = async (collection) => {
@@ -375,23 +474,9 @@ export function WorkspaceShell({ account, onLogout }) {
 			const created = await importExportApi.import(selectedId, content);
 			await loadCollections(selectedId);
 			setSelectedCollectionId(String(created._id));
-			setExpandedIds((current) => {
-				const next = new Set(current);
-				next.add(String(created._id));
-				return next;
-			});
+			expand([String(created._id)]);
 		} catch (importError) {
 			setTransferError(importError.message);
-		}
-	};
-	const duplicateCollection = async (collection) => {
-		try {
-			setCollectionsError("");
-			const created = await collectionApi.duplicate(collection._id);
-			await loadCollections(selectedId);
-			setSelectedCollectionId(created._id);
-		} catch (duplicateError) {
-			setCollectionsError(duplicateError.message);
 		}
 	};
 	const selectedWorkspace = workspaces.find((workspace) => workspace._id === selectedId) || null;
@@ -427,22 +512,31 @@ export function WorkspaceShell({ account, onLogout }) {
 				onClearHistory={() => { setHistoryActionError(""); setHistoryClearOpen(true); }}
 				onDeleteCollection={requestDeleteCollection}
 				onDeleteFolder={requestDeleteFolder}
+				onDeleteRequest={requestDeleteRequest}
+				onDeleteWorkspace={requestDeleteWorkspace}
 				onDismissTransferError={() => setTransferError("")}
 				onDuplicateCollection={duplicateCollection}
+				onDuplicateRequest={duplicateRequest}
 				onExportCollection={exportCollection}
 				onImportFile={importFile}
 				onNewCollection={openNewCollection}
 				onNewFolder={openNewFolder}
+				onNewRequest={createRequest}
+				onNewWorkspace={openNewWorkspace}
 				onRenameCollection={openRenameCollection}
 				onRenameFolder={openRenameFolder}
+				onRenameWorkspace={openRenameWorkspace}
 				onRetryCollections={() => loadCollections(selectedId)}
 				onRetryHistory={() => loadHistory(selectedId)}
+				onRetryRequests={(collectionId) => loadRequests(collectionId, true)}
 				onSelect={setSelectedId}
 				onSelectCollection={setSelectedCollectionId}
 				onSelectHistory={selectHistory}
 				onSelectRequest={selectRequest}
+				onSetDefaultWorkspace={setDefaultWorkspace}
 				onToggleCollection={toggleCollection}
 				requestsByCollection={requestsByCollection}
+				requestsError={requestsError}
 				requestsLoading={requestsLoading}
 				selectedCollectionId={selectedCollectionId}
 				selectedHistoryId={selectedHistoryId}
@@ -464,6 +558,8 @@ export function WorkspaceShell({ account, onLogout }) {
 						onSave={() => setHistorySaving(selectedHistoryEntry)}
 						replaying={replaying}
 					/>
+				) : loading ? (
+					<div className="workspace-empty" role="status"><div className="workspace-loading"><span className="spinner" />Loading workspace…</div></div>
 				) : error ? (
 					<div className="service-error" role="alert"><MaterialIcon size={20}>error_outline</MaterialIcon><span>{error}</span><button onClick={loadWorkspaces}>Retry</button></div>
 				) : (
@@ -484,6 +580,7 @@ export function WorkspaceShell({ account, onLogout }) {
 				)}
 			</main>
 			{editor && <CollectionEditor collection={editor.mode === "edit" ? (editor.kind === "folder" ? editor.folder : editor.collection) : null} kind={editor.kind} parentName={editor.parentName || ""} onClose={() => setEditor(null)} onSave={saveEditor} />}
+			{workspaceEditor && <CollectionEditor collection={workspaceEditor.mode === "edit" ? workspaceEditor.workspace : null} kind="workspace" onClose={() => setWorkspaceEditor(null)} onSave={saveWorkspace} />}
 			{environmentManager && (
 				<EnvironmentManager
 					activeId={activeEnvironment?._id}
@@ -507,6 +604,28 @@ export function WorkspaceShell({ account, onLogout }) {
 					onCancel={() => { if (!deleteBusy) { setDeleting(null); setDeleteError(""); } }}
 					onConfirm={confirmDelete}
 					title={deleting.kind === "folder" ? "Delete folder?" : "Delete collection?"}
+				/>
+			)}
+			{requestDeleting && (
+				<ConfirmationDialog
+					busy={requestBusy}
+					confirmLabel="Delete"
+					error={requestActionError}
+					message={`"${requestDeleting.name}" will be permanently deleted.`}
+					onCancel={() => { if (!requestBusy) { setRequestDeleting(null); setRequestActionError(""); } }}
+					onConfirm={confirmDeleteRequest}
+					title="Delete request?"
+				/>
+			)}
+			{workspaceDeleting && (
+				<ConfirmationDialog
+					busy={workspaceBusy}
+					confirmLabel="Delete"
+					error={workspaceActionError}
+					message={`"${workspaceDeleting.name}" and everything inside it will be permanently deleted.`}
+					onCancel={() => { if (!workspaceBusy) { setWorkspaceDeleting(null); setWorkspaceActionError(""); } }}
+					onConfirm={confirmDeleteWorkspace}
+					title="Delete workspace?"
 				/>
 			)}
 			{historySaving && (

@@ -14,6 +14,8 @@ export function loadConfig() {
 	const mongodbUri = getRequiredEnv("MONGODB_URI");
 	configInstance = {
 		mongodbUri,
+		jwtSecret: getRequiredEnv("JWT_SECRET"),
+		jwtExpiresIn: getOptionalEnv("JWT_EXPIRES_IN", "24h"),
 		port: parseInt(getOptionalEnv("PORT", "8000"), 10),
 		nodeEnv: getOptionalEnv("NODE_ENV", "development"),
 	};

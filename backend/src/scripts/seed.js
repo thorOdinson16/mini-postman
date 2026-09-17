@@ -2,7 +2,9 @@ import dotenv from "dotenv";
 
 dotenv.config({ quiet: true });
 
+import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
+import { WorkspaceAccount } from "../features/auth/workspace-account.model.js";
 import { Collection } from "../features/collections/collection.model.js";
 import { Environment } from "../features/environments/environment.model.js";
 import { HistoryEntry } from "../features/history/history-entry.model.js";
@@ -16,6 +18,10 @@ const config = loadConfig();
 const MINUTE = 60000;
 const now = new Date();
 const minutesAgo = (minutes) => new Date(now.getTime() - minutes * MINUTE);
+
+const DEMO_ACCOUNT = { name: "Alex Morgan", email: "alex.morgan@postman.app" };
+const DEMO_PASSWORD = "password123";
+const PASSWORD_ROUNDS = 12;
 
 const kv = (key, value, description = "") => ({ key, value, enabled: true, description });
 const noAuth = () => ({ type: "none" });
@@ -322,6 +328,7 @@ async function clearDatabase() {
 		Environment.deleteMany({}),
 		Collection.deleteMany({}),
 		Workspace.deleteMany({}),
+		WorkspaceAccount.deleteMany({}),
 	]);
 	await Promise.all([
 		HistoryEntry.syncIndexes(),
@@ -329,7 +336,16 @@ async function clearDatabase() {
 		Environment.syncIndexes(),
 		Collection.syncIndexes(),
 		Workspace.syncIndexes(),
+		WorkspaceAccount.syncIndexes(),
 	]);
+}
+
+async function seedAccounts() {
+	console.log("\nSeeding sign-in accounts...");
+	const passwordHash = await bcrypt.hash(DEMO_PASSWORD, PASSWORD_ROUNDS);
+	const accounts = await WorkspaceAccount.create([{ ...DEMO_ACCOUNT, passwordHash }]);
+	console.log(`  Created ${accounts.length} account`);
+	return accounts;
 }
 
 async function seedWorkspaces() {
@@ -490,6 +506,7 @@ async function seed() {
 		console.log("Connected to MongoDB");
 
 		await clearDatabase();
+		await seedAccounts();
 
 		const workspaces = await seedWorkspaces();
 		const environments = await seedEnvironments(workspaces);
@@ -506,6 +523,7 @@ async function seed() {
 			Collection.countDocuments(),
 			Request.countDocuments(),
 			HistoryEntry.countDocuments(),
+			WorkspaceAccount.countDocuments(),
 		]);
 
 		console.log("\n========================================");
@@ -517,9 +535,11 @@ async function seed() {
 		console.log(`  Collections:  ${counts[2]}`);
 		console.log(`  Requests:     ${counts[3]}`);
 		console.log(`  History:      ${counts[4]}`);
+		console.log(`  Accounts:     ${counts[5]}`);
 		console.log("\nSeeded workspaces:");
 		for (const workspace of workspaceRows) console.log(`  ${workspace.isDefault ? "*" : " "} ${workspace.name}`);
-		console.log("\nNo sign-in credentials are seeded yet; authentication is not implemented.");
+		console.log("\nDemo account:");
+		console.log(`  Email: ${DEMO_ACCOUNT.email} | Password: ${DEMO_PASSWORD}`);
 		console.log("========================================\n");
 	} catch (error) {
 		console.error("\nSeeding failed:", error.message);

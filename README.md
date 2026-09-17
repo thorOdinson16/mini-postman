@@ -17,3 +17,14 @@ The app will be built in this repository, following the guidelines given. Start 
 | Stack | Repo |
 |---|---|
 | React + Express (MERN) | https://github.com/ProblemSetters/coderepo-react-node-calendar |
+
+## Seeded access
+
+The database seeds one sign-in account on every start:
+
+```text
+Email: alex.morgan@postman.app
+Password: password123
+```
+
+Authenticate with `POST /api/v1/auth/login` and send the returned token as `Authorization: Bearer <token>` on every other `/api/v1` route.

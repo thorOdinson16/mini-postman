@@ -20,7 +20,7 @@ export function createApp() {
 	const app = express();
 	app.disable("x-powered-by");
 	app.use(cors());
-	app.use(express.json({ limit: "100kb" }));
+	app.use(express.json({ limit: "6mb" }));
 	app.use(express.static(publicDirectory));
 	app.get("/api/v1/health", (request, response) => {
 		const database = mongoose.connection.readyState === 1 ? "connected" : "disconnected";

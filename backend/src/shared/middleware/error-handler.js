@@ -6,6 +6,12 @@ export function notFoundHandler(request, response) {
 }
 
 export function errorHandler(error, request, response, next) {
+	if (error?.type === "entity.too.large") {
+		return response.status(413).json({ error: { code: "PAYLOAD_TOO_LARGE", message: "The request body is too large." } });
+	}
+	if (error instanceof SyntaxError && "body" in error) {
+		return response.status(400).json({ error: { code: "INVALID_JSON", message: "The request body is not valid JSON." } });
+	}
 	if (error instanceof ZodError) {
 		return response.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Request validation failed.", details: error.flatten() } });
 	}

@@ -296,9 +296,38 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .response-error { margin: 0; color: var(--danger); font-size: 13px; }
 .response-note { margin: 0; color: var(--warning, #fdd663); font-size: 12px; }
 .response-panel { min-width: 0; }
-.response-body-actions { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 8px; }
-.response-body-actions button { height: 28px; padding: 0 12px; border: 1px solid var(--border); border-radius: 14px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 500; }
-.response-body-actions button.active { border-color: var(--accent); color: var(--accent); }
+.response-body { display: grid; gap: 10px; }
+.response-body-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.body-search { display: flex; flex: 1; min-width: 0; max-width: 340px; height: 34px; align-items: center; gap: 6px; padding: 0 6px 0 12px; border: 1px solid var(--border); border-radius: 17px; background: var(--surface-muted); color: var(--muted); }
+.body-search input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: var(--ink-strong); font-size: 13px; }
+.body-search-count { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.body-search button { display: grid; width: 26px; height: 26px; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); }
+.body-search button:hover { background: var(--hover); color: var(--ink); }
+.body-view-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.view-toggle { display: flex; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; }
+.view-toggle button { height: 30px; padding: 0 12px; border: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 500; }
+.view-toggle button.active { background: var(--accent-tint); color: var(--accent-ink); }
+.body-tree-action { height: 30px; padding: 0 12px; border: 1px solid var(--border); border-radius: 15px; background: transparent; color: var(--accent); font-size: 12px; font-weight: 500; }
+.body-tree-action:hover { background: var(--accent-tint); }
+.response-body-content { max-height: 460px; overflow: auto; padding: 12px 14px; border-radius: 10px; background: var(--surface-muted); }
+.response-body-content .response-code { max-height: none; padding: 0; background: transparent; }
+.json-tree { font-family: "Roboto Mono", ui-monospace, monospace; font-size: 12.5px; line-height: 1.7; }
+.json-row { display: flex; align-items: baseline; gap: 2px; border-radius: 4px; white-space: pre-wrap; word-break: break-word; }
+.json-row.json-match-active { background: var(--accent-tint); }
+.json-toggle { display: inline-grid; width: 18px; height: 18px; flex: 0 0 auto; place-items: center; border: 0; background: transparent; color: var(--muted); }
+.json-toggle .material-icon { transition: transform 120ms ease; }
+.json-toggle.expanded .material-icon { transform: rotate(90deg); }
+.json-toggle-spacer { display: inline-block; width: 18px; flex: 0 0 auto; }
+.json-key { color: var(--accent); }
+.json-punct { color: var(--muted); }
+.json-summary { margin: 0 6px; color: var(--quiet); font-size: 11.5px; }
+.json-value-string { color: var(--success); }
+.json-value-number { color: #7fcfff; }
+.json-value-boolean { color: #d0bcff; }
+.json-value-null { color: var(--muted); }
+:root[data-theme="light"] .json-value-number { color: #005a7a; }
+:root[data-theme="light"] .json-value-boolean { color: #5b21b6; }
+.body-match { border-radius: 2px; background: var(--warning-container); color: var(--warning, #fdd663); }
 .response-code { max-height: 420px; margin: 0; overflow: auto; padding: 14px 16px; border-radius: 10px; background: var(--surface-muted); color: var(--ink-strong); font-family: "Roboto Mono", ui-monospace, monospace; font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 .response-empty { margin: 0; padding: 12px 0; color: var(--quiet); font-size: 13px; }
 .response-headers { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; }

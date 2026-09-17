@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
 import { snippetsApi } from "../snippets/snippets.api.js";
+import { ResponseBody } from "./ResponseBody.jsx";
 
 const formatBytes = (bytes) => {
 	if (!bytes) return "0 B";
@@ -15,14 +16,6 @@ const statusClass = (response) => {
 	if (response.status < 400) return "redirect";
 	if (response.status < 500) return "client";
 	return "server";
-};
-
-const prettyJson = (body) => {
-	try {
-		return JSON.stringify(JSON.parse(body), null, 2);
-	} catch {
-		return null;
-	}
 };
 
 function SentRequest({ request }) {
@@ -54,7 +47,6 @@ function SentRequest({ request }) {
 
 export function ResponseViewer({ error, result, sending, snippetSource = null }) {
 	const [tab, setTab] = useState("body");
-	const [pretty, setPretty] = useState(true);
 	const [snippets, setSnippets] = useState(null);
 	const [snippetsLoading, setSnippetsLoading] = useState(false);
 	const [snippetsError, setSnippetsError] = useState("");
@@ -105,8 +97,6 @@ export function ResponseViewer({ error, result, sending, snippetSource = null })
 		return <section className="response-viewer response-idle"><p>Send the request to see the response.</p></section>;
 	}
 	const { request, response } = result;
-	const formatted = prettyJson(response.body || "");
-	const json = formatted !== null;
 	return (
 		<section className="response-viewer">
 			<div className="response-summary">
@@ -123,17 +113,7 @@ export function ResponseViewer({ error, result, sending, snippetSource = null })
 				))}
 			</div>
 			<div className="response-panel">
-				{tab === "body" && (response.body ? (
-					<div className="response-body">
-						{json && (
-							<div className="response-body-actions">
-								<button type="button" className={pretty ? "active" : ""} onClick={() => setPretty(true)}>Pretty</button>
-								<button type="button" className={!pretty ? "active" : ""} onClick={() => setPretty(false)}>Raw</button>
-							</div>
-						)}
-						<pre className="response-code">{json && pretty ? formatted : response.body}</pre>
-					</div>
-				) : <p className="response-empty">No response body.</p>)}
+				{tab === "body" && (response.body ? <ResponseBody body={response.body} /> : <p className="response-empty">No response body.</p>)}
 				{tab === "headers" && (response.headers.length ? (
 					<ul className="response-headers">{response.headers.map((header, index) => <li key={index}><span className="response-header-key">{header.key}</span><span className="response-header-value">{header.value}</span></li>)}</ul>
 				) : <p className="response-empty">No response headers.</p>)}

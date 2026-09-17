@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { collectionApi } from "../collections/collection.api.js";
 import { CollectionEditor } from "../collections/CollectionEditor.jsx";
+import { environmentApi } from "../environments/environment.api.js";
+import { EnvironmentManager } from "../environments/EnvironmentManager.jsx";
 import { requestApi } from "../requests/request.api.js";
 import { RequestEditor } from "../requests/RequestEditor.jsx";
 import { ConfirmationDialog } from "../../shared/components/ConfirmationDialog.jsx";
@@ -26,6 +28,9 @@ export function WorkspaceShell({ account, onLogout }) {
 	const [requestsByCollection, setRequestsByCollection] = useState({});
 	const [requestsLoading, setRequestsLoading] = useState({});
 	const [selectedRequestId, setSelectedRequestId] = useState("");
+	const [environments, setEnvironments] = useState([]);
+	const [environmentsError, setEnvironmentsError] = useState("");
+	const [environmentManager, setEnvironmentManager] = useState(null);
 	const loadedCollections = useRef(new Set());
 	const [expandedIds, setExpandedIds] = useState(() => new Set());
 	const [editor, setEditor] = useState(null);
@@ -86,6 +91,23 @@ export function WorkspaceShell({ account, onLogout }) {
 			setRequestsLoading((current) => ({ ...current, [collectionId]: false }));
 		}
 	}, []);
+	const loadEnvironments = useCallback(async (workspaceId) => {
+		if (!workspaceId) {
+			setEnvironments([]);
+			setEnvironmentsError("");
+			return [];
+		}
+		try {
+			setEnvironmentsError("");
+			const list = await environmentApi.list(workspaceId);
+			setEnvironments(list);
+			return list;
+		} catch (environmentError) {
+			setEnvironmentsError(environmentError.message);
+			setEnvironments([]);
+			return [];
+		}
+	}, []);
 	useEffect(() => {
 		setExpandedIds(new Set());
 		loadedCollections.current = new Set();
@@ -93,7 +115,8 @@ export function WorkspaceShell({ account, onLogout }) {
 		setRequestsLoading({});
 		setSelectedRequestId("");
 		loadCollections(selectedId);
-	}, [selectedId, loadCollections]);
+		loadEnvironments(selectedId);
+	}, [selectedId, loadCollections, loadEnvironments]);
 	useEffect(() => {
 		if (selectedId) localStorage.setItem("postman-workspace-id", selectedId);
 		else localStorage.removeItem("postman-workspace-id");
@@ -117,6 +140,29 @@ export function WorkspaceShell({ account, onLogout }) {
 			return next;
 		});
 		if (willExpand && isCollection) loadRequests(id);
+	};
+	const activeEnvironment = environments.find((environment) => environment.isActive) || null;
+	const activateEnvironment = async (id) => {
+		try {
+			setEnvironmentsError("");
+			if (id) await environmentApi.update(id, { isActive: true });
+			else if (activeEnvironment) await environmentApi.update(activeEnvironment._id, { isActive: false });
+			await loadEnvironments(selectedId);
+		} catch (environmentError) {
+			setEnvironmentsError(environmentError.message);
+		}
+	};
+	const createEnvironment = async (values) => {
+		await environmentApi.create({ workspaceId: selectedId, ...values });
+		await loadEnvironments(selectedId);
+	};
+	const updateEnvironment = async (id, values) => {
+		await environmentApi.update(id, values);
+		await loadEnvironments(selectedId);
+	};
+	const deleteEnvironment = async (id) => {
+		await environmentApi.remove(id);
+		await loadEnvironments(selectedId);
 	};
 	const selectRequest = (collectionId, requestId) => {
 		setSelectedCollectionId(collectionId);
@@ -211,7 +257,16 @@ export function WorkspaceShell({ account, onLogout }) {
 	const selectedRequest = Object.values(requestsByCollection).flat().find((item) => String(item._id) === String(selectedRequestId)) || null;
 	return (
 		<div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
-			<WorkspaceHeader account={account} onLogout={onLogout} onSidebarToggle={toggleSidebar} />
+			<WorkspaceHeader
+				account={account}
+				activeEnvironment={activeEnvironment}
+				environments={environments}
+				onActivateEnvironment={activateEnvironment}
+				onLogout={onLogout}
+				onManageEnvironments={() => setEnvironmentManager({ view: "list", environment: null })}
+				onNewEnvironment={() => setEnvironmentManager({ view: "edit", environment: null })}
+				onSidebarToggle={toggleSidebar}
+			/>
 			<WorkspaceSidebar
 				onApplyCollectionOrder={applyCollectionOrder}
 				onApplyFolderOrder={applyFolderOrder}
@@ -263,6 +318,20 @@ export function WorkspaceShell({ account, onLogout }) {
 				)}
 			</main>
 			{editor && <CollectionEditor collection={editor.mode === "edit" ? (editor.kind === "folder" ? editor.folder : editor.collection) : null} kind={editor.kind} parentName={editor.parentName || ""} onClose={() => setEditor(null)} onSave={saveEditor} />}
+			{environmentManager && (
+				<EnvironmentManager
+					activeId={activeEnvironment?._id}
+					environments={environments}
+					error={environmentsError}
+					initialEnvironment={environmentManager.environment}
+					initialView={environmentManager.view}
+					onActivate={activateEnvironment}
+					onClose={() => setEnvironmentManager(null)}
+					onCreate={createEnvironment}
+					onDelete={deleteEnvironment}
+					onUpdate={updateEnvironment}
+				/>
+			)}
 			{deleting && (
 				<ConfirmationDialog
 					busy={deleteBusy}

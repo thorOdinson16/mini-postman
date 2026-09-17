@@ -65,7 +65,7 @@ function FolderBranch({ collection, draggingKey, dropTarget, expandedIds, nodes,
 	);
 }
 
-export function CollectionTree({ collections, error, expandedIds, loading, onApplyCollectionOrder, onApplyFolderOrder, onDeleteCollection, onDeleteFolder, onNewFolder, onRenameCollection, onRenameFolder, onRetry, onSelect, onToggle, selectedId }) {
+export function CollectionTree({ collections, error, expandedIds, loading, onApplyCollectionOrder, onApplyFolderOrder, onDeleteCollection, onDeleteFolder, onDuplicateCollection, onNewFolder, onRenameCollection, onRenameFolder, onRetry, onSelect, onToggle, selectedId }) {
 	const [menu, setMenu] = useState(null);
 	const [draggingKey, setDraggingKey] = useState(null);
 	const [dropTarget, setDropTarget] = useState(null);
@@ -169,6 +169,7 @@ export function CollectionTree({ collections, error, expandedIds, loading, onApp
 		const index = collectionIds.indexOf(String(collection._id));
 		return [
 			{ icon: "add", label: "New folder", onSelect: () => onNewFolder(collection) },
+			{ icon: "content_copy", label: "Duplicate", onSelect: () => onDuplicateCollection(collection) },
 			{ icon: "arrow_upward", label: "Move up", disabled: index <= 0, onSelect: () => moveCollection(collection, -1) },
 			{ icon: "arrow_downward", label: "Move down", disabled: index >= collectionIds.length - 1, onSelect: () => moveCollection(collection, 1) },
 			{ icon: "edit", label: "Rename", onSelect: () => onRenameCollection(collection) },

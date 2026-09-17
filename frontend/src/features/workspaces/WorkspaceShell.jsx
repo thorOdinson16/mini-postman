@@ -159,6 +159,16 @@ export function WorkspaceShell({ account, onLogout }) {
 			setCollectionsError(reorderError.message);
 		}
 	};
+	const duplicateCollection = async (collection) => {
+		try {
+			setCollectionsError("");
+			const created = await collectionApi.duplicate(collection._id);
+			await loadCollections(selectedId);
+			setSelectedCollectionId(created._id);
+		} catch (duplicateError) {
+			setCollectionsError(duplicateError.message);
+		}
+	};
 	const selectedWorkspace = workspaces.find((workspace) => workspace._id === selectedId) || null;
 	const selectedCollection = collections.find((collection) => String(collection._id) === String(selectedCollectionId)) || null;
 	return (
@@ -174,6 +184,7 @@ export function WorkspaceShell({ account, onLogout }) {
 				loading={loading}
 				onDeleteCollection={requestDeleteCollection}
 				onDeleteFolder={requestDeleteFolder}
+				onDuplicateCollection={duplicateCollection}
 				onNewCollection={openNewCollection}
 				onNewFolder={openNewFolder}
 				onRenameCollection={openRenameCollection}

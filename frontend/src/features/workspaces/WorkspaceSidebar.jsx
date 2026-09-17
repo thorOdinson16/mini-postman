@@ -1,6 +1,6 @@
-import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
+import { CollectionTree } from "../collections/CollectionTree.jsx";
 
-export function WorkspaceSidebar({ loading, onSelect, selectedId, workspaces }) {
+export function WorkspaceSidebar({ collections, collectionsError, collectionsLoading, expandedIds, loading, onRetryCollections, onSelect, onSelectCollection, onToggleCollection, selectedCollectionId, selectedId, workspaces }) {
 	return (
 		<aside className="sidebar">
 			<div className="sidebar-inner">
@@ -25,10 +25,7 @@ export function WorkspaceSidebar({ loading, onSelect, selectedId, workspaces }) 
 				</div>
 				<div className="sidebar-section">
 					<p className="sidebar-label">Collections</p>
-					<div className="sidebar-placeholder">
-						<MaterialIcon size={20}>folder</MaterialIcon>
-						<p>No collections yet</p>
-					</div>
+					<CollectionTree collections={collections} error={collectionsError} expandedIds={expandedIds} loading={collectionsLoading} onRetry={onRetryCollections} onSelect={onSelectCollection} onToggle={onToggleCollection} selectedId={selectedCollectionId} />
 				</div>
 			</div>
 		</aside>

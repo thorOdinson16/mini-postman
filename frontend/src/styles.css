@@ -129,6 +129,30 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .primary-button:disabled { opacity: .7; cursor: default; }
 .workspace-login-footer { display: flex; gap: 24px; justify-content: center; margin-top: 24px; color: var(--muted); font-size: 12px; }
 
+/* Collection tree */
+.collection-list, .folder-list { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; }
+.folder-list { margin-left: 13px; padding-left: 6px; border-left: 1px solid var(--divider); }
+.tree-row { display: flex; min-height: 36px; align-items: center; gap: 2px; border-radius: 9px; }
+.tree-row:hover { background: var(--hover); }
+.collection-row.active { background: var(--accent-tint); }
+.tree-toggle { display: inline-grid; width: 28px; height: 28px; flex: 0 0 auto; padding: 0; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); }
+.tree-toggle:hover { background: var(--hover); color: var(--ink); }
+.tree-toggle .material-icon { transition: transform 140ms ease; }
+.tree-toggle.expanded .material-icon { transform: rotate(90deg); }
+.tree-toggle-spacer { width: 28px; flex: 0 0 auto; }
+.collection-select { display: flex; min-width: 0; flex: 1; align-items: center; gap: 8px; padding: 0 8px 0 0; border: 0; background: transparent; color: var(--ink); font-size: 13.5px; text-align: left; }
+.collection-select .material-icon { color: var(--muted); }
+.collection-row.active .collection-select, .collection-row.active .tree-toggle { color: var(--accent-ink); }
+.collection-row.active .collection-select .material-icon { color: var(--accent-ink); }
+.tree-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder-row .tree-name { font-size: 13px; }
+.collection-skeleton { display: grid; gap: 8px; padding: 4px; }
+.collection-skeleton span { height: 34px; border-radius: 10px; background: var(--hover); animation: skeleton-pulse 1.4s ease-in-out infinite; }
+.collection-skeleton span:nth-child(2) { width: 78%; }
+.collection-skeleton span:nth-child(3) { width: 62%; }
+.sidebar-error { display: grid; gap: 8px; margin: 0 4px; padding: 12px; border: 1px solid var(--danger-outline); border-radius: 12px; background: var(--danger-container); color: var(--danger-ink); font-size: 13px; }
+.sidebar-error button { justify-self: start; height: 30px; padding: 0 14px; border: 0; border-radius: 15px; background: var(--danger); color: var(--danger-ink); font-size: 13px; font-weight: 500; }
+
 @media (max-width: 840px) {
     .app-shell { grid-template-columns: minmax(0, 1fr); }
     .brand { min-width: 0; }

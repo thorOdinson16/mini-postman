@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { collectionApi } from "../collections/collection.api.js";
+import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
 import { WorkspaceHeader } from "./WorkspaceHeader.jsx";
 import { WorkspaceSidebar } from "./WorkspaceSidebar.jsx";
 import { workspaceApi } from "./workspace.api.js";
@@ -13,6 +15,11 @@ export function WorkspaceShell({ account, onLogout }) {
 	const [selectedId, setSelectedId] = useState(() => localStorage.getItem("postman-workspace-id") || "");
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
+	const [collections, setCollections] = useState([]);
+	const [collectionsLoading, setCollectionsLoading] = useState(false);
+	const [collectionsError, setCollectionsError] = useState("");
+	const [selectedCollectionId, setSelectedCollectionId] = useState(() => localStorage.getItem("postman-collection-id") || "");
+	const [expandedIds, setExpandedIds] = useState(() => new Set());
 	const loadWorkspaces = useCallback(async () => {
 		try {
 			setError("");
@@ -26,23 +33,61 @@ export function WorkspaceShell({ account, onLogout }) {
 			setLoading(false);
 		}
 	}, []);
+	const loadCollections = useCallback(async (workspaceId) => {
+		if (!workspaceId) {
+			setCollections([]);
+			setCollectionsError("");
+			setCollectionsLoading(false);
+			return;
+		}
+		try {
+			setCollectionsError("");
+			setCollectionsLoading(true);
+			const list = await collectionApi.list(workspaceId);
+			setCollections(list);
+			setSelectedCollectionId((current) => (current && list.some((collection) => String(collection._id) === String(current)) ? current : ""));
+		} catch (requestError) {
+			setCollectionsError(requestError.message);
+			setCollections([]);
+			setSelectedCollectionId("");
+		} finally {
+			setCollectionsLoading(false);
+		}
+	}, []);
 	useEffect(() => {
 		loadWorkspaces();
 	}, [loadWorkspaces]);
 	useEffect(() => {
+		setExpandedIds(new Set());
+		loadCollections(selectedId);
+	}, [selectedId, loadCollections]);
+	useEffect(() => {
 		if (selectedId) localStorage.setItem("postman-workspace-id", selectedId);
 		else localStorage.removeItem("postman-workspace-id");
 	}, [selectedId]);
+	useEffect(() => {
+		if (selectedCollectionId) localStorage.setItem("postman-collection-id", selectedCollectionId);
+		else localStorage.removeItem("postman-collection-id");
+	}, [selectedCollectionId]);
 	const toggleSidebar = () => {
 		const next = !sidebarCollapsed;
 		setSidebarCollapsed(next);
 		localStorage.setItem("postman-sidebar", next ? "collapsed" : "expanded");
 	};
+	const toggleCollection = (id) => {
+		setExpandedIds((current) => {
+			const next = new Set(current);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			return next;
+		});
+	};
 	const selectedWorkspace = workspaces.find((workspace) => workspace._id === selectedId) || null;
+	const selectedCollection = collections.find((collection) => String(collection._id) === String(selectedCollectionId)) || null;
 	return (
 		<div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
 			<WorkspaceHeader account={account} onLogout={onLogout} onSidebarToggle={toggleSidebar} />
-			<WorkspaceSidebar loading={loading} onSelect={setSelectedId} selectedId={selectedId} workspaces={workspaces} />
+			<WorkspaceSidebar collections={collections} collectionsError={collectionsError} collectionsLoading={collectionsLoading} expandedIds={expandedIds} loading={loading} onRetryCollections={() => loadCollections(selectedId)} onSelect={setSelectedId} onSelectCollection={setSelectedCollectionId} onToggleCollection={toggleCollection} selectedCollectionId={selectedCollectionId} selectedId={selectedId} workspaces={workspaces} />
 			{!sidebarCollapsed && <button className="sidebar-scrim" aria-label="Close sidebar" onClick={toggleSidebar} />}
 			<main className="workspace-surface">
 				{error ? (
@@ -50,8 +95,17 @@ export function WorkspaceShell({ account, onLogout }) {
 				) : (
 					<div className="workspace-empty">
 						{selectedWorkspace && <p className="workspace-empty-eyebrow">{selectedWorkspace.name}</p>}
-						<h1>No request open</h1>
-						<p>Choose a request from the sidebar to send it and inspect the response.</p>
+						{selectedCollection ? (
+							<>
+								<h1>{selectedCollection.name}</h1>
+								<p>{selectedCollection.description || "Select a request from this collection to send it and inspect the response."}</p>
+							</>
+						) : (
+							<>
+								<h1>No request open</h1>
+								<p>Choose a request from the sidebar to send it and inspect the response.</p>
+							</>
+						)}
 					</div>
 				)}
 			</main>

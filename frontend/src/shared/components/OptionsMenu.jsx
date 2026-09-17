@@ -1,10 +1,12 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { restoreFocusIfBody } from "../utils/a11y.js";
 import { MaterialIcon } from "./MaterialIcon.jsx";
 
 export function OptionsMenu({ ariaLabel, items, onClose, position }) {
 	const reference = useRef(null);
 	useEffect(() => {
+		const opener = document.activeElement;
 		const closeOutside = (event) => {
 			if (!reference.current?.contains(event.target)) onClose();
 		};
@@ -17,6 +19,7 @@ export function OptionsMenu({ ariaLabel, items, onClose, position }) {
 		return () => {
 			document.removeEventListener("pointerdown", closeOutside);
 			document.removeEventListener("keydown", closeOnEscape);
+			restoreFocusIfBody(opener);
 		};
 	}, [onClose]);
 	const onKeyDown = (event) => {

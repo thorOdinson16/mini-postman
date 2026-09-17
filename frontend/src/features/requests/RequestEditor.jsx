@@ -1,17 +1,18 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { SelectMenu } from "../../shared/components/SelectMenu.jsx";
-import { KeyValueEditor } from "./KeyValueEditor.jsx";
+import { createTabList } from "../../shared/utils/a11y.js";
+import { KeyValueEditor, withRowIds } from "./KeyValueEditor.jsx";
 import { RequestAuthEditor } from "./RequestAuthEditor.jsx";
 import { RequestBodyEditor } from "./RequestBodyEditor.jsx";
 import { ResponseViewer } from "./ResponseViewer.jsx";
 import { requestApi } from "./request.api.js";
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"].map((method) => ({ value: method, label: method }));
-const normalizeRows = (rows = []) => rows.map((row) => ({ key: row.key ?? "", value: row.value ?? "", enabled: row.enabled !== false, description: row.description ?? "" }));
+const normalizeRows = (rows = []) => withRowIds(rows.map((row) => ({ key: row.key ?? "", value: row.value ?? "", enabled: row.enabled !== false, description: row.description ?? "" })));
 const normalizeBody = (body) => ({
 	mode: body?.mode ?? "none",
 	raw: body?.raw ?? "",
-	formData: (body?.formData ?? []).map((field) => ({ key: field.key ?? "", value: field.value ?? "", type: field.type === "file" ? "file" : "text", enabled: field.enabled !== false, description: field.description ?? "" })),
+	formData: withRowIds((body?.formData ?? []).map((field) => ({ key: field.key ?? "", value: field.value ?? "", type: field.type === "file" ? "file" : "text", enabled: field.enabled !== false, description: field.description ?? "" }))),
 	urlEncoded: normalizeRows(body?.urlEncoded),
 });
 const normalizeAuth = (auth) => ({
@@ -51,13 +52,13 @@ export function RequestEditor({ onSave, request }) {
 		name: form.name.trim() || "Untitled request",
 		method: form.method,
 		url: form.url.trim(),
-		queryParams: form.queryParams.filter((row) => row.key.trim()).map((row) => ({ ...row, key: row.key.trim() })),
-		headers: form.headers.filter((row) => row.key.trim()).map((row) => ({ ...row, key: row.key.trim() })),
+		queryParams: form.queryParams.filter((row) => row.key.trim()).map(({ key, value, enabled, description }) => ({ key: key.trim(), value, enabled, description })),
+		headers: form.headers.filter((row) => row.key.trim()).map(({ key, value, enabled, description }) => ({ key: key.trim(), value, enabled, description })),
 		body: {
 			mode: form.body.mode,
 			raw: form.body.raw,
-			formData: form.body.formData.filter((row) => row.key.trim()).map((row) => ({ ...row, key: row.key.trim() })),
-			urlEncoded: form.body.urlEncoded.filter((row) => row.key.trim()).map((row) => ({ ...row, key: row.key.trim() })),
+			formData: form.body.formData.filter((row) => row.key.trim()).map(({ key, value, type, enabled, description }) => ({ key: key.trim(), value, type, enabled, description })),
+			urlEncoded: form.body.urlEncoded.filter((row) => row.key.trim()).map(({ key, value, enabled, description }) => ({ key: key.trim(), value, enabled, description })),
 		},
 		auth: form.auth,
 	});
@@ -67,6 +68,8 @@ export function RequestEditor({ onSave, request }) {
 		{ id: "body", label: "Body" },
 		{ id: "auth", label: "Auth" },
 	];
+	const tabReference = useRef(null);
+	const tabList = createTabList({ ids: tabs.map((entry) => entry.id), activeId: tab, onChange: setTab, ariaLabel: "Request sections", idPrefix: "request-editor", listRef: tabReference });
 	const save = async (event) => {
 		event.preventDefault();
 		try {
@@ -116,15 +119,15 @@ export function RequestEditor({ onSave, request }) {
 					<SelectMenu ariaLabel="HTTP method" className="method-select" onChange={(method) => update({ method })} options={METHODS} value={form.method} />
 					<input className="request-url-input" aria-label="Request URL" placeholder="Enter a request URL" spellCheck={false} value={form.url} onChange={(event) => update({ url: event.target.value })} />
 				</div>
-				<div className="editor-tabs" role="tablist" aria-label="Request sections">
+				<div className="editor-tabs" {...tabList.listProps}>
 					{tabs.map((entry) => (
-						<button key={entry.id} type="button" role="tab" className={tab === entry.id ? "active" : ""} aria-selected={tab === entry.id} onClick={() => setTab(entry.id)}>
+						<button key={entry.id} type="button" {...tabList.tabProps(entry.id)} className={tab === entry.id ? "active" : ""} onClick={() => setTab(entry.id)}>
 							{entry.label}
 							{entry.count ? <span className="editor-tab-count">{entry.count}</span> : null}
 						</button>
 					))}
 				</div>
-				<div className="editor-panel">
+				<div className="editor-panel" {...tabList.panelProps(tab)}>
 					{tab === "params" && <KeyValueEditor label="Query Params" onChange={(queryParams) => update({ queryParams })} rows={form.queryParams} />}
 					{tab === "headers" && <KeyValueEditor label="Headers" onChange={(headers) => update({ headers })} rows={form.headers} />}
 					{tab === "body" && <RequestBodyEditor body={form.body} onChange={(body) => update({ body })} />}

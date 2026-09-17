@@ -69,7 +69,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .theme-toggle button { display: flex; min-height: 36px; align-items: center; justify-content: center; gap: 7px; border: 0; background: transparent; color: var(--ink-strong); font-size: 13px; font-weight: 500; }
 .theme-toggle button + button { border-left: 1px solid var(--outline); }
 .theme-toggle button:hover { background: var(--hover); }
-.theme-toggle button[aria-pressed="true"] { background: var(--accent-container); color: var(--accent-container-ink); }
+.theme-toggle button[aria-checked="true"] { background: var(--accent-container); color: var(--accent-container-ink); }
 .account-signout-button { display: flex; width: 100%; min-height: 44px; align-items: center; gap: 12px; padding: 0 16px; border: 0; border-radius: 14px; background: transparent; color: var(--ink-strong); font-size: 13px; font-weight: 500; text-align: left; }
 .account-signout-button:hover { background: var(--hover); }
 .account-signout-button .material-icon { color: var(--muted); }
@@ -406,6 +406,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .sidebar-tabs button { flex: 1; height: 34px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; }
 .sidebar-tabs button:hover { background: var(--hover); color: var(--ink); }
 .sidebar-tabs button.active { background: var(--accent-tint); color: var(--accent-ink); }
+.sidebar-panel { display: grid; gap: 22px; }
 .history-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
 .history-item { display: flex; width: 100%; align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-radius: 10px; background: transparent; text-align: left; }
 .history-item:hover { background: var(--hover); }

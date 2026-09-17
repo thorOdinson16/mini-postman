@@ -4,9 +4,12 @@ import { SearchPanel } from "../collections/SearchPanel.jsx";
 import { HistoryList } from "../history/HistoryList.jsx";
 import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
 import { OptionsMenu } from "../../shared/components/OptionsMenu.jsx";
+import { createTabList } from "../../shared/utils/a11y.js";
 
 export function WorkspaceSidebar({ activeTab, collections, collectionsError, collectionsLoading, expandedIds, history, historyError, historyLoading, loading, onApplyCollectionOrder, onApplyFolderOrder, onClearHistory, onDeleteCollection, onDeleteFolder, onDeleteRequest, onDeleteWorkspace, onDismissTransferError, onDuplicateCollection, onDuplicateRequest, onExportCollection, onImportFile, onNewCollection, onNewFolder, onNewRequest, onNewWorkspace, onRenameCollection, onRenameFolder, onRenameWorkspace, onRetryCollections, onRetryHistory, onRetryRequests, onSelect, onSelectCollection, onSelectHistory, onSelectRequest, onSetDefaultWorkspace, onTabChange, onToggleCollection, requestsByCollection, requestsError, requestsLoading, selectedCollectionId, selectedHistoryId, selectedId, selectedRequestId, transferError, workspaces }) {
 	const fileInputReference = useRef(null);
+	const tabReference = useRef(null);
+	const tabs = createTabList({ ids: ["collections", "history"], activeId: activeTab, onChange: onTabChange, ariaLabel: "Sidebar sections", idPrefix: "sidebar", listRef: tabReference });
 	const [workspaceMenu, setWorkspaceMenu] = useState(null);
 	const [searchQuery, setSearchQuery] = useState("");
 	const searchActive = searchQuery.trim().length > 0;
@@ -22,10 +25,11 @@ export function WorkspaceSidebar({ activeTab, collections, collectionsError, col
 	return (
 		<aside className="sidebar">
 			<div className="sidebar-inner">
-				<div className="sidebar-tabs" role="tablist" aria-label="Sidebar sections">
-					<button type="button" role="tab" aria-selected={activeTab === "collections"} className={activeTab === "collections" ? "active" : ""} onClick={() => onTabChange("collections")}>Collections</button>
-					<button type="button" role="tab" aria-selected={activeTab === "history"} className={activeTab === "history" ? "active" : ""} onClick={() => onTabChange("history")}>History</button>
+				<div className="sidebar-tabs" {...tabs.listProps}>
+					<button type="button" {...tabs.tabProps("collections")} className={activeTab === "collections" ? "active" : ""} onClick={() => onTabChange("collections")}>Collections</button>
+					<button type="button" {...tabs.tabProps("history")} className={activeTab === "history" ? "active" : ""} onClick={() => onTabChange("history")}>History</button>
 				</div>
+				<div className="sidebar-panel" {...tabs.panelProps(activeTab)}>
 				{activeTab === "history" ? (
 					<HistoryList entries={history} error={historyError} loading={historyLoading} onClear={onClearHistory} onRetry={onRetryHistory} onSelect={onSelectHistory} selectedId={selectedHistoryId} />
 				) : (
@@ -125,6 +129,7 @@ export function WorkspaceSidebar({ activeTab, collections, collectionsError, col
 						</div>
 					</>
 				)}
+				</div>
 			</div>
 		</aside>
 	);

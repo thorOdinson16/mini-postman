@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { KeyValueEditor } from "../requests/KeyValueEditor.jsx";
+import { KeyValueEditor, withRowIds } from "../requests/KeyValueEditor.jsx";
 
 const normalizeVariables = (variables = []) =>
-	variables.map((variable) => ({ key: variable.key ?? "", value: variable.value ?? "", enabled: variable.enabled !== false, secret: variable.secret === true, description: variable.description ?? "" }));
+	withRowIds(variables.map((variable) => ({ key: variable.key ?? "", value: variable.value ?? "", enabled: variable.enabled !== false, secret: variable.secret === true, description: variable.description ?? "" })));
 
 export function EnvironmentEditor({ environment = null, onCancel, onSave }) {
 	const [name, setName] = useState(environment?.name || "");

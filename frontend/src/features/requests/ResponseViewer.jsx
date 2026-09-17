@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
+import { createTabList } from "../../shared/utils/a11y.js";
 import { snippetsApi } from "../snippets/snippets.api.js";
 import { ResponseBody } from "./ResponseBody.jsx";
 
@@ -51,6 +52,7 @@ export function ResponseViewer({ error, result, sending, snippetSource = null })
 	const [snippetsLoading, setSnippetsLoading] = useState(false);
 	const [snippetsError, setSnippetsError] = useState("");
 	const [copied, setCopied] = useState("");
+	const tabReference = useRef(null);
 	useEffect(() => {
 		setSnippets(null);
 		setSnippetsError("");
@@ -88,10 +90,11 @@ export function ResponseViewer({ error, result, sending, snippetSource = null })
 			}
 			setCopied(language);
 			setTimeout(() => setCopied((current) => (current === language ? "" : current)), 1600);
-		} catch {
-			setSnippetsError("Copying to the clipboard is unavailable in this browser.");
-		}
+	} catch {
+		setSnippetsError("Copying to the clipboard is unavailable in this browser.");
+	}
 	};
+	const tabList = createTabList({ ids: ["body", "headers", "sent", "snippets"], activeId: tab, onChange: openTab, ariaLabel: "Response sections", idPrefix: "response", listRef: tabReference });
 	if (sending) {
 		return <section className="response-viewer response-idle" role="status"><div className="response-loading"><span className="spinner" />Sending request…</div></section>;
 	}
@@ -112,12 +115,12 @@ export function ResponseViewer({ error, result, sending, snippetSource = null })
 			</div>
 			{response.error && <p className="response-error" role="alert">{response.error}</p>}
 			{response.truncated && <p className="response-note">The response body was truncated at the maximum size.</p>}
-			<div className="editor-tabs" role="tablist" aria-label="Response sections">
+			<div className="editor-tabs" {...tabList.listProps}>
 				{[["body", "Body"], ["headers", "Headers"], ["sent", "Sent request"], ["snippets", "Snippets"]].map(([id, label]) => (
-					<button key={id} type="button" role="tab" className={tab === id ? "active" : ""} aria-selected={tab === id} onClick={() => openTab(id)}>{label}</button>
+					<button key={id} type="button" {...tabList.tabProps(id)} className={tab === id ? "active" : ""} onClick={() => openTab(id)}>{label}</button>
 				))}
 			</div>
-			<div className="response-panel">
+			<div className="response-panel" {...tabList.panelProps(tab)}>
 				{tab === "body" && (response.body ? <ResponseBody body={response.body} /> : <p className="response-empty">No response body.</p>)}
 				{tab === "headers" && ((response.headers || []).length ? (
 					<ul className="response-headers">{(response.headers || []).map((header, index) => <li key={index}><span className="response-header-key">{header.key}</span><span className="response-header-value">{header.value}</span></li>)}</ul>

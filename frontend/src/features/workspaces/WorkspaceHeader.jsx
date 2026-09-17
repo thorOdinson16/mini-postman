@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { EnvironmentMenu } from "../environments/EnvironmentMenu.jsx";
 import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
 import { identityInitials } from "../../shared/utils/identity.js";
+import { menuKeyDown, restoreFocusIfBody } from "../../shared/utils/a11y.js";
 import { applyTheme, readTheme } from "../../shared/utils/theme.js";
 
 export function WorkspaceHeader({ account, activeEnvironment, environments, onActivateEnvironment, onLogout, onManageEnvironments, onNewEnvironment, onSidebarToggle }) {
@@ -11,6 +12,7 @@ export function WorkspaceHeader({ account, activeEnvironment, environments, onAc
 	const accountMenuReference = useRef(null);
 	useEffect(() => {
 		if (!accountMenuOpen) return undefined;
+		const opener = document.activeElement;
 		const closeMenu = (event) => {
 			if (!accountMenuReference.current?.contains(event.target)) setAccountMenuOpen(false);
 		};
@@ -22,9 +24,11 @@ export function WorkspaceHeader({ account, activeEnvironment, environments, onAc
 		};
 		document.addEventListener("pointerdown", closeMenu);
 		document.addEventListener("keydown", closeOnEscape);
+		requestAnimationFrame(() => accountMenuReference.current?.querySelector('[role="menuitemradio"], [role="menuitem"]')?.focus());
 		return () => {
 			document.removeEventListener("pointerdown", closeMenu);
 			document.removeEventListener("keydown", closeOnEscape);
+			restoreFocusIfBody(opener);
 		};
 	}, [accountMenuOpen]);
 	const openEnvironmentMenu = (event) => {
@@ -55,7 +59,7 @@ export function WorkspaceHeader({ account, activeEnvironment, environments, onAc
 				<div className="account-menu-anchor" ref={accountMenuReference}>
 					<button className="account-button" aria-expanded={accountMenuOpen} aria-haspopup="menu" aria-label={`${account.name} account`} onClick={() => setAccountMenuOpen((open) => !open)}><span className="account-avatar">{identityInitials(account.name)}</span></button>
 					{accountMenuOpen && (
-						<div className="account-menu" role="menu" aria-label="Account menu">
+						<div className="account-menu" role="menu" aria-label="Account menu" onKeyDown={(event) => menuKeyDown(event, accountMenuReference.current)}>
 							<div className="account-menu-identity">
 								<span className="account-avatar account-avatar-large">{identityInitials(account.name)}</span>
 								<strong>{account.name}</strong>
@@ -68,7 +72,7 @@ export function WorkspaceHeader({ account, activeEnvironment, environments, onAc
 										{ value: "light", label: "Light", icon: "light_mode" },
 										{ value: "dark", label: "Dark", icon: "dark_mode" },
 									].map((option) => (
-										<button key={option.value} type="button" aria-pressed={theme === option.value} onClick={() => setTheme(applyTheme(option.value))}><MaterialIcon size={18}>{option.icon}</MaterialIcon><span>{option.label}</span></button>
+										<button key={option.value} type="button" role="menuitemradio" aria-checked={theme === option.value} onClick={() => setTheme(applyTheme(option.value))}><MaterialIcon size={18}>{option.icon}</MaterialIcon><span>{option.label}</span></button>
 									))}
 								</div>
 							</div>

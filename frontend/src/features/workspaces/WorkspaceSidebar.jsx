@@ -1,6 +1,7 @@
 import { CollectionTree } from "../collections/CollectionTree.jsx";
+import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
 
-export function WorkspaceSidebar({ collections, collectionsError, collectionsLoading, expandedIds, loading, onRetryCollections, onSelect, onSelectCollection, onToggleCollection, selectedCollectionId, selectedId, workspaces }) {
+export function WorkspaceSidebar({ collections, collectionsError, collectionsLoading, expandedIds, loading, onDeleteCollection, onNewCollection, onRenameCollection, onRetryCollections, onSelect, onSelectCollection, onToggleCollection, selectedCollectionId, selectedId, workspaces }) {
 	return (
 		<aside className="sidebar">
 			<div className="sidebar-inner">
@@ -24,8 +25,11 @@ export function WorkspaceSidebar({ collections, collectionsError, collectionsLoa
 					)}
 				</div>
 				<div className="sidebar-section">
-					<p className="sidebar-label">Collections</p>
-					<CollectionTree collections={collections} error={collectionsError} expandedIds={expandedIds} loading={collectionsLoading} onRetry={onRetryCollections} onSelect={onSelectCollection} onToggle={onToggleCollection} selectedId={selectedCollectionId} />
+					<div className="sidebar-section-heading">
+						<p className="sidebar-label">Collections</p>
+						<button className="icon-button sidebar-add" aria-label="New collection" title="New collection" onClick={onNewCollection}><MaterialIcon size={18}>add</MaterialIcon></button>
+					</div>
+					<CollectionTree collections={collections} error={collectionsError} expandedIds={expandedIds} loading={collectionsLoading} onDeleteCollection={onDeleteCollection} onRenameCollection={onRenameCollection} onRetry={onRetryCollections} onSelect={onSelectCollection} onToggle={onToggleCollection} selectedId={selectedCollectionId} />
 				</div>
 			</div>
 		</aside>

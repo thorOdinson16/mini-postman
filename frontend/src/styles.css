@@ -152,6 +152,47 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .collection-skeleton span:nth-child(3) { width: 62%; }
 .sidebar-error { display: grid; gap: 8px; margin: 0 4px; padding: 12px; border: 1px solid var(--danger-outline); border-radius: 12px; background: var(--danger-container); color: var(--danger-ink); font-size: 13px; }
 .sidebar-error button { justify-self: start; height: 30px; padding: 0 14px; border: 0; border-radius: 15px; background: var(--danger); color: var(--danger-ink); font-size: 13px; font-weight: 500; }
+.sidebar-section-heading { display: flex; align-items: center; justify-content: space-between; padding: 0 6px 0 4px; }
+.sidebar-section-heading .sidebar-label { margin: 0; }
+.sidebar-add { width: 28px; height: 28px; }
+.collection-menu-button { display: inline-grid; width: 28px; height: 28px; flex: 0 0 auto; margin-right: 3px; padding: 0; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); opacity: 0; transition: opacity 120ms ease, background 120ms ease; }
+.tree-row:hover .collection-menu-button, .collection-row.active .collection-menu-button, .collection-menu-button:focus-visible { opacity: 1; }
+.collection-menu-button:hover { background: var(--hover); color: var(--ink); }
+.collection-options-menu { position: fixed; z-index: 200; min-width: 184px; padding: 6px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: 0 8px 24px rgb(0 0 0 / 28%); animation: menu-in 120ms ease-out; }
+.collection-options-menu button { display: flex; width: 100%; min-height: 40px; align-items: center; gap: 12px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--ink-strong); font-size: 14px; text-align: left; }
+.collection-options-menu button:hover, .collection-options-menu button:focus-visible { background: var(--hover); outline: 0; }
+.collection-options-menu .material-icon { color: var(--muted); }
+.collection-options-menu .collection-options-danger { color: var(--danger); }
+.collection-options-menu .collection-options-danger .material-icon { color: var(--danger); }
+
+/* Dialogs */
+dialog { padding: 0; border: 0; border-radius: 18px; background: var(--surface); color: var(--ink); }
+dialog::backdrop { background: rgb(0 0 0 / 48%); }
+.confirmation-dialog { display: grid; gap: 12px; width: min(400px, calc(100vw - 48px)); padding: 24px; }
+.confirmation-dialog h2 { margin: 0; color: var(--ink-strong); font-size: 18px; font-weight: 500; }
+.confirmation-dialog p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.confirmation-dialog .confirmation-dialog-error { color: var(--danger); }
+.confirmation-dialog footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.confirmation-dialog footer button { min-height: 38px; padding: 0 18px; border: 0; border-radius: 19px; background: transparent; color: var(--accent); font-size: 14px; font-weight: 500; }
+.confirmation-dialog footer button:hover { background: var(--hover); }
+.confirmation-dialog footer button:disabled { opacity: .7; cursor: default; }
+.confirmation-dialog .confirmation-confirm { background: var(--danger); color: #fff; }
+.confirmation-dialog .confirmation-confirm:hover { filter: brightness(1.08); }
+.collection-editor { display: grid; width: min(440px, calc(100vw - 48px)); padding: 26px 26px 20px; }
+.collection-editor h2 { margin: 0 0 16px; color: var(--ink-strong); font-size: 19px; font-weight: 500; }
+.collection-editor form { display: grid; }
+.collection-editor .outlined-input { margin-bottom: 14px; }
+.collection-editor .outlined-input textarea { width: 100%; min-height: 84px; padding: 18px 15px 10px; border: 1px solid var(--outline); border-radius: 8px; outline: none; background: transparent; color: var(--ink-strong); font-size: 15px; resize: vertical; }
+.collection-editor .outlined-input textarea:focus { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.collection-editor .outlined-input textarea + label { top: 16px; transform: none; }
+.collection-editor .outlined-input textarea:focus + label, .collection-editor .outlined-input textarea:not(:placeholder-shown) + label { top: 0; transform: translateY(-50%); font-size: 12px; color: var(--accent); }
+.collection-editor-error { margin: 0 0 10px; color: var(--danger); font-size: 13px; }
+.collection-editor footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.collection-editor footer button { min-height: 38px; padding: 0 18px; border: 0; border-radius: 19px; background: transparent; color: var(--accent); font-size: 14px; font-weight: 500; }
+.collection-editor footer button:hover { background: var(--hover); }
+.collection-editor footer button:disabled { opacity: .7; cursor: default; }
+.collection-editor .collection-editor-submit { background: var(--accent); color: var(--accent-on); }
+.collection-editor .collection-editor-submit:hover { filter: brightness(1.08); }
 
 @media (max-width: 840px) {
     .app-shell { grid-template-columns: minmax(0, 1fr); }

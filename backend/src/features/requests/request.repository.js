@@ -39,6 +39,7 @@ export const requestRepository = {
 				updateOne: { filter: { _id: requestId, collectionId, folderId }, update: { $set: { order } } },
 			})),
 		),
+	deleteByCollection: (collectionId) => Request.deleteMany({ collectionId }),
 	remove: (id) => Request.findByIdAndDelete(id).lean(),
 	deleteAll: () => Request.deleteMany({}),
 	insertMany: (items) => Request.insertMany(items),

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { collectionApi } from "../collections/collection.api.js";
+import { CollectionEditor } from "../collections/CollectionEditor.jsx";
+import { ConfirmationDialog } from "../../shared/components/ConfirmationDialog.jsx";
 import { MaterialIcon } from "../../shared/components/MaterialIcon.jsx";
 import { WorkspaceHeader } from "./WorkspaceHeader.jsx";
 import { WorkspaceSidebar } from "./WorkspaceSidebar.jsx";
@@ -20,6 +22,10 @@ export function WorkspaceShell({ account, onLogout }) {
 	const [collectionsError, setCollectionsError] = useState("");
 	const [selectedCollectionId, setSelectedCollectionId] = useState(() => localStorage.getItem("postman-collection-id") || "");
 	const [expandedIds, setExpandedIds] = useState(() => new Set());
+	const [editor, setEditor] = useState(null);
+	const [deleting, setDeleting] = useState(null);
+	const [deleteBusy, setDeleteBusy] = useState(false);
+	const [deleteError, setDeleteError] = useState("");
 	const loadWorkspaces = useCallback(async () => {
 		try {
 			setError("");
@@ -38,7 +44,7 @@ export function WorkspaceShell({ account, onLogout }) {
 			setCollections([]);
 			setCollectionsError("");
 			setCollectionsLoading(false);
-			return;
+			return [];
 		}
 		try {
 			setCollectionsError("");
@@ -46,10 +52,12 @@ export function WorkspaceShell({ account, onLogout }) {
 			const list = await collectionApi.list(workspaceId);
 			setCollections(list);
 			setSelectedCollectionId((current) => (current && list.some((collection) => String(collection._id) === String(current)) ? current : ""));
+			return list;
 		} catch (requestError) {
 			setCollectionsError(requestError.message);
 			setCollections([]);
 			setSelectedCollectionId("");
+			return [];
 		} finally {
 			setCollectionsLoading(false);
 		}
@@ -82,12 +90,52 @@ export function WorkspaceShell({ account, onLogout }) {
 			return next;
 		});
 	};
+	const saveCollection = async (values) => {
+		if (editor?.mode === "edit") {
+			await collectionApi.update(editor.collection._id, values);
+			await loadCollections(selectedId);
+		} else {
+			const created = await collectionApi.create({ workspaceId: selectedId, ...values });
+			await loadCollections(selectedId);
+			setSelectedCollectionId(created._id);
+		}
+		setEditor(null);
+	};
+	const confirmDeleteCollection = async () => {
+		try {
+			setDeleteBusy(true);
+			setDeleteError("");
+			await collectionApi.remove(deleting._id);
+			await loadCollections(selectedId);
+			setDeleting(null);
+		} catch (deleteRequestError) {
+			setDeleteError(deleteRequestError.message);
+		} finally {
+			setDeleteBusy(false);
+		}
+	};
 	const selectedWorkspace = workspaces.find((workspace) => workspace._id === selectedId) || null;
 	const selectedCollection = collections.find((collection) => String(collection._id) === String(selectedCollectionId)) || null;
 	return (
 		<div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
 			<WorkspaceHeader account={account} onLogout={onLogout} onSidebarToggle={toggleSidebar} />
-			<WorkspaceSidebar collections={collections} collectionsError={collectionsError} collectionsLoading={collectionsLoading} expandedIds={expandedIds} loading={loading} onRetryCollections={() => loadCollections(selectedId)} onSelect={setSelectedId} onSelectCollection={setSelectedCollectionId} onToggleCollection={toggleCollection} selectedCollectionId={selectedCollectionId} selectedId={selectedId} workspaces={workspaces} />
+			<WorkspaceSidebar
+				collections={collections}
+				collectionsError={collectionsError}
+				collectionsLoading={collectionsLoading}
+				expandedIds={expandedIds}
+				loading={loading}
+				onDeleteCollection={(collection) => { setDeleteError(""); setDeleting(collection); }}
+				onNewCollection={() => setEditor({ mode: "create" })}
+				onRenameCollection={(collection) => setEditor({ mode: "edit", collection })}
+				onRetryCollections={() => loadCollections(selectedId)}
+				onSelect={setSelectedId}
+				onSelectCollection={setSelectedCollectionId}
+				onToggleCollection={toggleCollection}
+				selectedCollectionId={selectedCollectionId}
+				selectedId={selectedId}
+				workspaces={workspaces}
+			/>
 			{!sidebarCollapsed && <button className="sidebar-scrim" aria-label="Close sidebar" onClick={toggleSidebar} />}
 			<main className="workspace-surface">
 				{error ? (
@@ -109,6 +157,18 @@ export function WorkspaceShell({ account, onLogout }) {
 					</div>
 				)}
 			</main>
+			{editor && <CollectionEditor collection={editor.mode === "edit" ? editor.collection : null} onClose={() => setEditor(null)} onSave={saveCollection} />}
+			{deleting && (
+				<ConfirmationDialog
+					busy={deleteBusy}
+					confirmLabel="Delete"
+					error={deleteError}
+					message={`"${deleting.name}" and its requests will be permanently deleted.`}
+					onCancel={() => { if (!deleteBusy) { setDeleting(null); setDeleteError(""); } }}
+					onConfirm={confirmDeleteCollection}
+					title="Delete collection?"
+				/>
+			)}
 		</div>
 	);
 }

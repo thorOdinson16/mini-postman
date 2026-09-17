@@ -97,6 +97,7 @@ export const collectionService = {
 	},
 	async remove(id) {
 		await loadCollection(id);
+		await requestRepository.deleteByCollection(id);
 		await collectionRepository.remove(id);
 	},
 	async addFolder(collectionId, input) {

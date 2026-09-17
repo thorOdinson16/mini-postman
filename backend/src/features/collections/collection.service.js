@@ -60,7 +60,6 @@ export const collectionService = {
 		await ensureWorkspace(workspaceId);
 		return collectionRepository.list(workspaceId);
 	},
-	getById: (id) => loadCollection(id),
 	async create(input) {
 		await ensureWorkspace(input.workspaceId);
 		await ensureUniqueName(input.name, input.workspaceId);

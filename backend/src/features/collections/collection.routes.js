@@ -5,7 +5,6 @@ import {
 	deleteCollection,
 	deleteFolder,
 	duplicateCollection,
-	getCollection,
 	listCollections,
 	renameFolder,
 	reorderCollections,
@@ -19,7 +18,6 @@ collectionRouter.get("/search", searchCollections);
 collectionRouter.put("/order", reorderCollections);
 collectionRouter.get("/", listCollections);
 collectionRouter.post("/", createCollection);
-collectionRouter.get("/:collectionId", getCollection);
 collectionRouter.patch("/:collectionId", updateCollection);
 collectionRouter.delete("/:collectionId", deleteCollection);
 collectionRouter.post("/:collectionId/duplicate", duplicateCollection);

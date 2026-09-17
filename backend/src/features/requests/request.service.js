@@ -42,18 +42,6 @@ async function nextAvailableName(baseName, collectionId) {
 	return candidate;
 }
 
-async function loadEnvironment(workspaceId, environmentId) {
-	if (environmentId) {
-		if (!mongoose.isValidObjectId(environmentId)) throw new AppError(404, "ENVIRONMENT_NOT_FOUND", "The requested environment does not exist.");
-		const environment = await environmentRepository.findById(environmentId);
-		if (!environment || String(environment.workspaceId) !== String(workspaceId)) {
-			throw new AppError(404, "ENVIRONMENT_NOT_FOUND", "The requested environment does not exist.");
-		}
-		return environment;
-	}
-	return environmentRepository.findActive(workspaceId);
-}
-
 function toSnapshot(resolved) {
 	return {
 		method: resolved.method,
@@ -95,12 +83,6 @@ export const requestService = {
 	async list(collectionId, folderId) {
 		await loadCollection(collectionId);
 		return requestRepository.list(collectionId, folderId === "root" ? null : folderId);
-	},
-	async getById(id) {
-		ensureId(id);
-		const request = await requestRepository.findById(id);
-		if (!request) throw new AppError(404, "REQUEST_NOT_FOUND", "The requested request does not exist.");
-		return request;
 	},
 	async create(input) {
 		const collection = await loadCollection(input.collectionId);
@@ -153,14 +135,6 @@ export const requestService = {
 		const response = await executeRequest(resolved, auth);
 		await recordHistory(collection.workspaceId, environment?._id, resolved, response);
 		return { requestId: request._id, environmentId: environment?._id ?? null, request: resolved, response };
-	},
-	async sendAdHoc(input) {
-		await ensureWorkspace(input.workspaceId);
-		const environment = await loadEnvironment(input.workspaceId, input.environmentId);
-		const resolved = resolveRequestParts(input, buildVariableMap(environment?.variables));
-		const response = await executeRequest(resolved, resolved.auth);
-		await recordHistory(input.workspaceId, environment?._id, resolved, response);
-		return { environmentId: environment?._id ?? null, request: resolved, response };
 	},
 	async reorder(collectionId, input) {
 		const collection = await loadCollection(collectionId);

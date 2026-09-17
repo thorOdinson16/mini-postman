@@ -23,14 +23,6 @@ export async function listWorkspaces(request, response, next) {
 	}
 }
 
-export async function getWorkspace(request, response, next) {
-	try {
-		response.json({ data: await workspaceService.getById(request.params.workspaceId) });
-	} catch (error) {
-		next(error);
-	}
-}
-
 export async function createWorkspace(request, response, next) {
 	try {
 		response.status(201).json({ data: await workspaceService.create(createSchema.parse(request.body)) });

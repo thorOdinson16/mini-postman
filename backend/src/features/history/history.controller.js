@@ -26,14 +26,6 @@ export async function listHistory(request, response, next) {
 	}
 }
 
-export async function getHistory(request, response, next) {
-	try {
-		response.json({ data: await historyService.getById(request.params.historyId) });
-	} catch (error) {
-		next(error);
-	}
-}
-
 export async function deleteHistory(request, response, next) {
 	try {
 		await historyService.remove(request.params.historyId);

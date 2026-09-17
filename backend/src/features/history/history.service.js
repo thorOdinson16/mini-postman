@@ -27,7 +27,6 @@ export const historyService = {
 		await ensureWorkspace(workspaceId);
 		return historyRepository.list(workspaceId, options);
 	},
-	getById: (id) => loadEntry(id),
 	async remove(id) {
 		await loadEntry(id);
 		await historyRepository.remove(id);

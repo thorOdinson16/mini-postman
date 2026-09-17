@@ -69,14 +69,6 @@ export async function listCollections(request, response, next) {
 	}
 }
 
-export async function getCollection(request, response, next) {
-	try {
-		response.json({ data: await collectionService.getById(request.params.collectionId) });
-	} catch (error) {
-		next(error);
-	}
-}
-
 export async function createCollection(request, response, next) {
 	try {
 		response.status(201).json({ data: await collectionService.create(createSchema.parse(request.body)) });

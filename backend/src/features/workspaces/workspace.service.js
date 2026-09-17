@@ -18,12 +18,6 @@ async function ensureUniqueName(name, excludedId) {
 
 export const workspaceService = {
 	list: () => workspaceRepository.list(),
-	async getById(id) {
-		ensureId(id);
-		const workspace = await workspaceRepository.findById(id);
-		if (!workspace) throw new AppError(404, "WORKSPACE_NOT_FOUND", "The requested workspace does not exist.");
-		return workspace;
-	},
 	async create(input) {
 		await ensureUniqueName(input.name);
 		const isFirst = (await workspaceRepository.count()) === 0;

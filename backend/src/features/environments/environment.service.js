@@ -25,12 +25,6 @@ export const environmentService = {
 		await ensureWorkspace(workspaceId);
 		return environmentRepository.list(workspaceId);
 	},
-	async getById(id) {
-		ensureId(id);
-		const environment = await environmentRepository.findById(id);
-		if (!environment) throw new AppError(404, "ENVIRONMENT_NOT_FOUND", "The requested environment does not exist.");
-		return environment;
-	},
 	async create(input) {
 		await ensureWorkspace(input.workspaceId);
 		await ensureUniqueName(input.name, input.workspaceId);

@@ -42,14 +42,6 @@ export async function listEnvironments(request, response, next) {
 	}
 }
 
-export async function getEnvironment(request, response, next) {
-	try {
-		response.json({ data: await environmentService.getById(request.params.environmentId) });
-	} catch (error) {
-		next(error);
-	}
-}
-
 export async function createEnvironment(request, response, next) {
 	try {
 		response.status(201).json({ data: await environmentService.create(createSchema.parse(request.body)) });

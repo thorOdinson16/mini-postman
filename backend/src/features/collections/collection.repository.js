@@ -47,6 +47,4 @@ export const collectionRepository = {
 		),
 	remove: (id) => Collection.findByIdAndDelete(id).lean(),
 	removeByWorkspace: (workspaceId) => Collection.deleteMany({ workspaceId }),
-	deleteAll: () => Collection.deleteMany({}),
-	insertMany: (items) => Collection.insertMany(items),
 };

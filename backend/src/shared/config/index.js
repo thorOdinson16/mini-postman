@@ -31,5 +31,3 @@ export function initConfig() {
 	configInstance = loadConfig();
 	return configInstance;
 }
-
-export { getRequiredEnv, getOptionalEnv };

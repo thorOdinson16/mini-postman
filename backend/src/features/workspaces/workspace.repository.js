@@ -8,13 +8,10 @@ export const workspaceRepository = {
 			name: { $regex: `^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" },
 			...(excludedId ? { _id: { $ne: excludedId } } : {}),
 		}).lean(),
-	findDefault: () => Workspace.findOne({ isDefault: true }).lean(),
 	findOldestExcluding: (id) => Workspace.findOne({ _id: { $ne: id } }).sort({ createdAt: 1 }).lean(),
 	count: () => Workspace.countDocuments(),
 	create: (input) => Workspace.create(input),
 	update: (id, input) => Workspace.findByIdAndUpdate(id, input, { new: true, runValidators: true }).lean(),
 	clearDefault: (excludedId) => Workspace.updateMany({ _id: { $ne: excludedId }, isDefault: true }, { $set: { isDefault: false } }),
 	remove: (id) => Workspace.findByIdAndDelete(id).lean(),
-	deleteAll: () => Workspace.deleteMany({}),
-	insertMany: (items) => Workspace.insertMany(items),
 };

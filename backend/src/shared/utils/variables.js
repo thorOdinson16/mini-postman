@@ -10,7 +10,7 @@ export function buildVariableMap(variables = []) {
 	return map;
 }
 
-export function resolveTemplate(value, variableMap) {
+function resolveTemplate(value, variableMap) {
 	if (typeof value !== "string" || !value.includes("{{")) return value;
 	return value.replace(PLACEHOLDER, (match, key) => (variableMap.has(key) ? variableMap.get(key) : match));
 }
@@ -19,7 +19,7 @@ function plain(value) {
 	return value?.toObject ? value.toObject() : { ...(value ?? {}) };
 }
 
-export function resolveKeyValue(rows, variableMap) {
+function resolveKeyValue(rows, variableMap) {
 	return (rows || []).map((row) => {
 		const value = plain(row);
 		return {
@@ -31,7 +31,7 @@ export function resolveKeyValue(rows, variableMap) {
 	});
 }
 
-export function resolveBody(body, variableMap) {
+function resolveBody(body, variableMap) {
 	const value = plain(body);
 	return {
 		mode: value.mode ?? "none",

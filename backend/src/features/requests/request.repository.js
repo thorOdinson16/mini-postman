@@ -25,7 +25,6 @@ export const requestRepository = {
 			.sort({ collectionId: 1, folderId: 1, order: 1 })
 			.limit(limit)
 			.lean(),
-	countByCollection: (collectionId) => Request.countDocuments({ collectionId }),
 	countByFolder: (collectionId, folderId) => Request.countDocuments({ collectionId, folderId }),
 	maxOrder: async (collectionId, folderId) => {
 		const top = await Request.findOne({ collectionId, folderId }).sort({ order: -1 }).lean();
@@ -42,6 +41,5 @@ export const requestRepository = {
 	deleteByCollection: (collectionId) => Request.deleteMany({ collectionId }),
 	deleteByCollections: (collectionIds) => Request.deleteMany({ collectionId: { $in: collectionIds } }),
 	remove: (id) => Request.findByIdAndDelete(id).lean(),
-	deleteAll: () => Request.deleteMany({}),
 	insertMany: (items) => Request.insertMany(items),
 };

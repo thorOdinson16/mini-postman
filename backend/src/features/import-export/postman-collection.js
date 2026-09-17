@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { AppError } from "../../shared/errors/app-error.js";
 
-export const POSTMAN_SCHEMA = "https://schema.getpostman.com/json/collection/v2.1.0/collection.json";
+const POSTMAN_SCHEMA = "https://schema.getpostman.com/json/collection/v2.1.0/collection.json";
 
 const MAX_IMPORT_DEPTH = 50;
 

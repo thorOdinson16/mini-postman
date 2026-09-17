@@ -84,6 +84,30 @@ const sendSchema = z.object({
 	auth: authSchema.default({ type: "none" }),
 });
 
+const orderSchema = z.object({
+	collectionId: objectId,
+	folderId: objectId.nullable().optional(),
+	requestIds: z
+		.array(objectId)
+		.min(1)
+		.refine((ids) => new Set(ids).size === ids.length, "List each request only once."),
+});
+
+const searchSchema = z
+	.object({
+		workspaceId: objectId.optional(),
+		collectionId: objectId.optional(),
+		folderId: z.union([objectId, z.literal("root")]).optional(),
+		q: z.string().trim().min(1).max(100),
+		limit: z.coerce.number().int().min(1).max(200).default(50),
+	})
+	.refine((value) => value.workspaceId || value.collectionId, "Provide a workspace or collection to search.");
+
+const duplicateSchema = z.object({
+	name: z.string().trim().min(1).max(160).optional(),
+	folderId: objectId.nullable().optional(),
+});
+
 export async function listRequests(request, response, next) {
 	try {
 		const { collectionId, folderId } = listSchema.parse(request.query);
@@ -137,6 +161,31 @@ export async function sendRequest(request, response, next) {
 export async function sendAdHocRequest(request, response, next) {
 	try {
 		response.json({ data: await requestService.sendAdHoc(sendSchema.parse(request.body)) });
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function reorderRequests(request, response, next) {
+	try {
+		const { collectionId, folderId, requestIds } = orderSchema.parse(request.body);
+		response.json({ data: await requestService.reorder(collectionId, { folderId, requestIds }) });
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function duplicateRequest(request, response, next) {
+	try {
+		response.status(201).json({ data: await requestService.duplicate(request.params.requestId, duplicateSchema.parse(request.body)) });
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function searchRequests(request, response, next) {
+	try {
+		response.json({ data: await requestService.search(searchSchema.parse(request.query)) });
 	} catch (error) {
 		next(error);
 	}

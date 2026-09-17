@@ -25,6 +25,22 @@ function ensureFolder(collection, folderId) {
 	}
 }
 
+async function ensureWorkspace(workspaceId) {
+	if (!mongoose.isValidObjectId(workspaceId) || !(await workspaceRepository.findById(workspaceId))) {
+		throw new AppError(404, "WORKSPACE_NOT_FOUND", "The requested workspace does not exist.");
+	}
+}
+
+async function nextAvailableName(baseName, collectionId) {
+	let candidate = `${baseName} copy`;
+	let counter = 2;
+	while (await requestRepository.findByName(candidate, collectionId)) {
+		candidate = `${baseName} copy ${counter}`;
+		counter += 1;
+	}
+	return candidate;
+}
+
 async function loadEnvironment(workspaceId, environmentId) {
 	if (environmentId) {
 		if (!mongoose.isValidObjectId(environmentId)) throw new AppError(404, "ENVIRONMENT_NOT_FOUND", "The requested environment does not exist.");
@@ -140,13 +156,69 @@ export const requestService = {
 		return { requestId: request._id, environmentId: environment?._id ?? null, request: resolved, response };
 	},
 	async sendAdHoc(input) {
-		if (!mongoose.isValidObjectId(input.workspaceId) || !(await workspaceRepository.findById(input.workspaceId))) {
-			throw new AppError(404, "WORKSPACE_NOT_FOUND", "The requested workspace does not exist.");
-		}
+		await ensureWorkspace(input.workspaceId);
 		const environment = await loadEnvironment(input.workspaceId, input.environmentId);
 		const resolved = resolveRequestParts(input, buildVariableMap(environment?.variables));
 		const response = await executeRequest(resolved, resolved.auth);
 		await recordHistory(input.workspaceId, environment?._id, resolved, response);
 		return { environmentId: environment?._id ?? null, request: resolved, response };
+	},
+	async reorder(collectionId, input) {
+		const collection = await loadCollection(collectionId);
+		const folderId = input.folderId ?? null;
+		if (folderId) ensureFolder(collection, folderId);
+		const existing = await requestRepository.list(collectionId, folderId);
+		const existingIds = existing.map((request) => String(request._id));
+		if (input.requestIds.some((id) => !existingIds.includes(String(id)))) {
+			throw new AppError(404, "REQUEST_NOT_FOUND", "The requested request does not exist.");
+		}
+		if (input.requestIds.length !== existingIds.length) {
+			throw new AppError(400, "INVALID_REQUEST_ORDER", "Provide every request in this location exactly once.");
+		}
+		await requestRepository.setOrders(
+			collectionId,
+			folderId,
+			input.requestIds.map((requestId, order) => ({ requestId, order })),
+		);
+		return requestRepository.list(collectionId, folderId);
+	},
+	async duplicate(id, input) {
+		ensureId(id);
+		const source = await requestRepository.findById(id);
+		if (!source) throw new AppError(404, "REQUEST_NOT_FOUND", "The requested request does not exist.");
+		const collection = await loadCollection(source.collectionId);
+		const folderId = "folderId" in input ? input.folderId : source.folderId;
+		if (folderId) ensureFolder(collection, folderId);
+		const name = input.name ?? (await nextAvailableName(source.name, source.collectionId));
+		return requestRepository.create({
+			collectionId: source.collectionId,
+			folderId: folderId ?? null,
+			name,
+			description: source.description ?? "",
+			method: source.method,
+			url: source.url,
+			queryParams: source.queryParams ?? [],
+			headers: source.headers ?? [],
+			body: source.body ?? { mode: "none" },
+			auth: source.auth ?? { type: "none" },
+			order: await requestRepository.maxOrder(source.collectionId, folderId ?? null),
+		});
+	},
+	async search(input) {
+		const filter = {};
+		if (input.collectionId) {
+			const collection = await loadCollection(input.collectionId);
+			if (input.workspaceId && String(collection.workspaceId) !== String(input.workspaceId)) {
+				throw new AppError(404, "COLLECTION_NOT_FOUND", "The requested collection does not exist.");
+			}
+			if (input.folderId !== undefined && input.folderId !== "root") ensureFolder(collection, input.folderId);
+			filter.collectionId = collection._id;
+		} else {
+			await ensureWorkspace(input.workspaceId);
+			const collections = await collectionRepository.listIdsByWorkspace(input.workspaceId);
+			filter.collectionId = { $in: collections.map((collection) => collection._id) };
+		}
+		if (input.folderId !== undefined) filter.folderId = input.folderId === "root" ? null : input.folderId;
+		return requestRepository.search(filter, input.q, input.limit);
 	},
 };

@@ -4,19 +4,25 @@ import {
 	createCollection,
 	deleteCollection,
 	deleteFolder,
+	duplicateCollection,
 	getCollection,
 	listCollections,
 	renameFolder,
+	reorderCollections,
 	reorderFolders,
+	searchCollections,
 	updateCollection,
 } from "./collection.controller.js";
 
 export const collectionRouter = Router();
+collectionRouter.get("/search", searchCollections);
+collectionRouter.put("/order", reorderCollections);
 collectionRouter.get("/", listCollections);
 collectionRouter.post("/", createCollection);
 collectionRouter.get("/:collectionId", getCollection);
 collectionRouter.patch("/:collectionId", updateCollection);
 collectionRouter.delete("/:collectionId", deleteCollection);
+collectionRouter.post("/:collectionId/duplicate", duplicateCollection);
 collectionRouter.post("/:collectionId/folders", addFolder);
 collectionRouter.put("/:collectionId/folders/order", reorderFolders);
 collectionRouter.patch("/:collectionId/folders/:folderId", renameFolder);

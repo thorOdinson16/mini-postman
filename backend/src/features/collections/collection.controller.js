@@ -44,6 +44,22 @@ const folderOrderSchema = z.object({
 		.refine((ids) => new Set(ids).size === ids.length, "List each folder only once."),
 });
 
+const orderSchema = z.object({
+	workspaceId: objectId,
+	collectionIds: z
+		.array(objectId)
+		.min(1)
+		.refine((ids) => new Set(ids).size === ids.length, "List each collection only once."),
+});
+
+const searchSchema = z.object({
+	workspaceId: objectId,
+	q: z.string().trim().min(1).max(100),
+	limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+
+const duplicateSchema = z.object({ name: z.string().trim().min(1).max(120).optional() });
+
 export async function listCollections(request, response, next) {
 	try {
 		const { workspaceId } = listSchema.parse(request.query);
@@ -113,6 +129,32 @@ export async function deleteFolder(request, response, next) {
 export async function reorderFolders(request, response, next) {
 	try {
 		response.json({ data: await collectionService.reorderFolders(request.params.collectionId, folderOrderSchema.parse(request.body)) });
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function reorderCollections(request, response, next) {
+	try {
+		const { workspaceId, collectionIds } = orderSchema.parse(request.body);
+		response.json({ data: await collectionService.reorder(workspaceId, collectionIds) });
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function duplicateCollection(request, response, next) {
+	try {
+		response.status(201).json({ data: await collectionService.duplicate(request.params.collectionId, duplicateSchema.parse(request.body)) });
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function searchCollections(request, response, next) {
+	try {
+		const { workspaceId, q, limit } = searchSchema.parse(request.query);
+		response.json({ data: await collectionService.search(workspaceId, q, limit) });
 	} catch (error) {
 		next(error);
 	}

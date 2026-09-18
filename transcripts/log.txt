@@ -1043,3 +1043,96 @@ branch=main
 repo_root=C:\Users\AbhiDS\Documents\hackerrank-earn\postman
 worktree=main
 parent_agent=none
+## [2026-09-18T04:49:11+05:30] Ran the validation skill and fixed the reported FAIL
+
+User Prompt (verbatim, secrets redacted):
+run the validation skill against the repo. fix every FAIL it reports.
+
+Agent Response Summary:
+Executed the skills/validate checks against the repository. Static and runtime checks S01-S19 and R01-R12 were performed with direct evidence; the full start, health, auth, feature reads, persistence CRUD, error paths, and restart reset all passed. One FAIL was found: six backend product routes had no frontend consumer (GET by id for workspaces/collections/environments/requests/history and the ad-hoc POST /requests/send). Removed those routes and their orphaned controller handlers and service methods, re-verified the app starts and the removed routes return 404, committed as f2a6221, and wrote the validation report outside the repository. All checks now pass.
+
+Actions:
+* Ran R01 install+seed, R02 build, R03 backend syntax check, R04 full start, R05 health
+* Ran R06 baseline counts, R07 auth, R08 feature reads, R09 persistence, R10 error paths, R11 restart reset, R12 cleanup
+* Ran static checks S01-S19 including archive measurement and config parsing
+* Removed the six unconsumed routes plus workspace/collection/environment/request/history getById handlers and services, and request sendAdHoc/loadEnvironment/sendSchema
+* Committed f2a6221 fix: remove backend routes without a frontend consumer
+* Wrote postman-validation-report.md under the temp directory
+
+Context:
+tool=opencode
+branch=main
+repo_root=C:\Users\AbhiDS\Documents\hackerrank-earn\postman
+worktree=main
+parent_agent=none
+## [2026-09-18T04:56:49+05:30] Rebuilt ad-hoc send with an unsaved draft state in the request editor
+
+User Prompt (verbatim, secrets redacted):
+no i would want you to rebuild the ad hoc send. add ui state in the editor where request is not saved but sendable. maybe something like - this request is not saved, save it after success
+...
+approved 1 2 3 and 5. for 4, use dirty guard pattern dont directly discard silently
+
+Agent Response Summary:
+Restored the ad-hoc send endpoint and gave it a real frontend consumer to keep the route-coverage contract satisfied. The backend re-gained POST /requests/send with sendSchema, the sendAdHocRequest controller, and the sendAdHoc service plus loadEnvironment helper. The frontend request editor now supports an unsaved draft: New request opens an in-memory draft, Send uses the ad-hoc endpoint against the active workspace/environment, the banner says the request is not saved (and nudges saving after a successful send), and Save reuses the collection/folder dialog then persists and selects the saved request. A dirty guard intercepts editor-replacing actions with a discard confirmation. Verified with a live ad-hoc send (resolved URL, 200 echo, history row) and the Vite production build.
+
+Actions:
+* Edited backend request.routes.js, request.controller.js, request.service.js (restore ad-hoc)
+* Edited frontend request.api.js (sendAdHoc), MaterialIcon.jsx (info), SaveToCollectionDialog.jsx (default collection/folder)
+* Edited frontend RequestEditor.jsx (isDraft, onSend, onDirtyChange, draft banner)
+* Edited frontend WorkspaceShell.jsx (draft state, guarded selection, ad-hoc send, draft save dialog) and styles.css
+* Ran node --check on backend (0 failures), bun run build (57 modules), and a live ad-hoc API test
+* Ran bun run seed to restore the baseline
+* Ran git add -A and git commit
+
+Context:
+tool=opencode
+branch=main
+repo_root=C:\Users\AbhiDS\Documents\hackerrank-earn\postman
+worktree=main
+parent_agent=none
+## [2026-09-18T05:46:37+05:30] Push, re-run validator, export log
+
+User Prompt (verbatim, secrets redacted):
+okay first push this, run the validator once again. if its all clean, then copy the log.txt into transcripts - that will be the final commit+push
+
+Agent Response Summary:
+Pushed the draft/ad-hoc commit, then executed the full Code Repo validation skill end to end. Install and seed passed, the Vite production build and backend syntax check passed, and the exact declared run command started both services with a connected health check. All static checks S01-S19 and runtime checks R01-R12 passed with live API, MongoDB, persistence, error-path, restart-reset, archive, and cleanup evidence; the report records 31 PASS / 0 FAIL / 0 MANUAL. The only environment note is that the host PATH bash resolves to WSL, which cannot reach the Windows MongoDB, so the identical setup/run scripts were executed with Git Bash first on PATH.
+
+Actions:
+* Ran git push origin main (7a46c0d..674acad)
+* Read skills/validate/SKILL.md and references (static-checks.md, runtime-checks.md, report-format.md) and GUIDELINES.md
+* Captured starting state (branch main @ 674acad, clean tree, ports 3000/8000 free, 27017 pre-existing)
+* Ran bun install and setup.sh --seed; ran frontend bun run build and backend node --check
+* Ran the exact bun start command; verified health and seed baseline (3 workspaces, 7 collections, 23 requests, 5 environments, 13 history)
+* Exercised auth, feature reads, search, snippets, import/export, persistence create/read/update/send/delete, ad-hoc send, history replay/save, and error paths
+* Verified restart reset, stopped all started processes, and removed scratch files
+* Wrote report to %TEMP%\opencode\postman-validation-report.md
+* Appended this log and copied it to transcripts/log.txt
+
+Context:
+tool=opencode
+branch=main
+repo_root=C:\Users\AbhiDS\Documents\hackerrank-earn\postman
+worktree=main
+parent_agent=none
+
+## [2026-09-18T05:46:37+05:30] Status check-ins during validation
+
+User Prompt (verbatim, secrets redacted):
+whatshappening
+whats the progress
+whats the update
+
+Agent Response Summary:
+Provided concise progress summaries while the validation run continued in the background. No repository change was made in response to these check-ins.
+
+Actions:
+* Reported install/seed, build, backend check, full-start, health, auth, feature, persistence, and error-path results
+* Reported restart-reset completion and the remaining cleanup, report, and final-commit steps
+
+Context:
+tool=opencode
+branch=main
+repo_root=C:\Users\AbhiDS\Documents\hackerrank-earn\postman
+worktree=main
+parent_agent=none

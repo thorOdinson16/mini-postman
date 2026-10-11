@@ -80,9 +80,6 @@ export function buildOutgoingRequest(resolved, auth) {
 	if (url.protocol !== "http:" && url.protocol !== "https:") {
 		throw new AppError(400, "INVALID_REQUEST_URL", "Only http and https request URLs are supported.");
 	}
-	if (url.hostname === "169.254.169.254") {
-		throw new AppError(400, "BLOCKED_REQUEST_URL", "Requests to the cloud metadata endpoint are not allowed.");
-	}
 	for (const { key, value } of enabledRows(resolved.queryParams)) url.searchParams.append(key, value ?? "");
 	const { headers, queryPairs } = buildHeaders(resolved, auth);
 	for (const [key, value] of queryPairs) url.searchParams.append(key, value);

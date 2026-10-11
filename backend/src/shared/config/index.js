@@ -18,6 +18,7 @@ export function loadConfig() {
 		jwtExpiresIn: getOptionalEnv("JWT_EXPIRES_IN", "24h"),
 		port: parseInt(getOptionalEnv("PORT", "8000"), 10),
 		nodeEnv: getOptionalEnv("NODE_ENV", "development"),
+		allowPrivateDestinations: getOptionalEnv("ALLOW_PRIVATE_DESTINATIONS", "false") === "true" && getOptionalEnv("NODE_ENV", "development") !== "production",
 	};
 	return configInstance;
 }

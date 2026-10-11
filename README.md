@@ -1,6 +1,6 @@
-# Postman
+# mini-postman
 
-A full-stack, Postman-inspired API workspace for composing, organizing, sending, and analyzing HTTP requests. It keeps the React + Express (MERN) stack of the sample calendar repo and persists everything in MongoDB.
+A full-stack, Postman-inspired API workspace for composing, organizing, sending, and analyzing HTTP requests. It is a React + Express (MERN) application that persists everything in MongoDB.
 
 ## Built With
 
@@ -68,6 +68,11 @@ A full-stack, Postman-inspired API workspace for composing, organizing, sending,
 ### Development Setup
 
 1. Clone the repository and open the project directory.
+
+   ```bash
+   git clone https://github.com/thorOdinson16/mini-postman.git
+   cd mini-postman
+   ```
 
 2. Install the pinned workspaces.
 

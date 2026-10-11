@@ -104,5 +104,6 @@ Authenticate with `POST /api/v1/auth/login` and send the returned token as `Auth
 |---|---|
 | `bun start` | Seeds MongoDB and starts the frontend and backend together. |
 | `bun run seed` | Restores the deterministic MongoDB baseline. |
+| `bun run test` | Runs the backend tests against a throwaway `postman_test` database on the local MongoDB (override with `TEST_MONGODB_URI`); the app does not need to be running. |
 | `bun run dev:backend` | Starts only the Express API on port `8000`. |
 | `bun run dev:frontend` | Starts only Vite on port `3000`. |

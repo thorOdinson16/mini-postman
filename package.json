@@ -8,11 +8,12 @@
 		"backend"
 	],
 	"scripts": {
-		"prestart": "bash setup.sh --start",
+		"prestart": "bun run seed",
 		"start": "concurrently \"bun run dev:backend\" \"bun run dev:frontend\"",
 		"dev:frontend": "cd frontend && bun run dev",
 		"dev:backend": "cd backend && bun run dev",
-		"seed": "cd backend && bun run seed"
+		"seed": "cd backend && bun run seed",
+		"test": "cd backend && bun run test"
 	},
 	"devDependencies": {
 		"concurrently": "9.2.1"

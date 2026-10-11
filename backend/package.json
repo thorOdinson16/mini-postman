@@ -8,7 +8,8 @@
     "scripts": {
         "start": "bun src/index.js",
         "dev": "bun --watch src/index.js",
-        "seed": "bun src/scripts/seed.js"
+        "seed": "bun src/scripts/seed.js",
+        "test": "bun test tests"
     },
     "dependencies": {
         "bcryptjs": "3.0.2",

@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { importExportService } from "./import-export.service.js";
-
-const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, "Provide a valid identifier.");
+import { objectId } from "../../shared/validation/common.js";
 
 const importSchema = z.object({
 	workspaceId: objectId,

@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { historyService } from "./history.service.js";
-
-const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, "Provide a valid identifier.");
+import { objectId } from "../../shared/validation/common.js";
 
 const listSchema = z.object({
 	workspaceId: objectId,

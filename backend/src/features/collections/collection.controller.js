@@ -1,16 +1,7 @@
 import { z } from "zod";
 import { collectionService } from "./collection.service.js";
-
-const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, "Provide a valid identifier.");
-
-const authSchema = z.object({
-	type: z.enum(["none", "bearer", "basic", "apiKey"]),
-	bearer: z.object({ token: z.string().max(4000).optional() }).optional(),
-	basic: z.object({ username: z.string().trim().max(254).optional(), password: z.string().max(1000).optional() }).optional(),
-	apiKey: z
-		.object({ key: z.string().trim().max(300).optional(), value: z.string().max(4000).optional(), addTo: z.enum(["header", "query"]).optional() })
-		.optional(),
-});
+import { objectId } from "../../shared/validation/common.js";
+import { authSchema } from "../../shared/validation/request.js";
 
 const createSchema = z.object({
 	workspaceId: objectId,

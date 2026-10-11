@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { environmentService } from "./environment.service.js";
-
-const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, "Provide a valid identifier.");
+import { objectId } from "../../shared/validation/common.js";
 
 const variableSchema = z.object({
 	key: z.string().trim().min(1).max(200),

@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import { createApp } from "./app.js";
-import { connectDatabase, disconnectDatabase } from "./shared/config/database.js";
+import { connectDatabase, disconnectDatabase, ensureIndexes } from "./shared/config/database.js";
 import { initConfig } from "./shared/config/index.js";
 
 dotenv.config({ quiet: true });
@@ -9,6 +9,7 @@ const config = initConfig();
 const HOST = "0.0.0.0";
 
 await connectDatabase(config.mongodbUri);
+await ensureIndexes();
 
 const server = createApp().listen(config.port, HOST, () => {
 	console.log(`Server running on port ${config.port}`);

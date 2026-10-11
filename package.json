@@ -8,7 +8,7 @@
 		"backend"
 	],
 	"scripts": {
-		"prestart": "bun run seed",
+		"prestart": "bash setup.sh --start",
 		"start": "concurrently \"bun run dev:backend\" \"bun run dev:frontend\"",
 		"dev:frontend": "cd frontend && bun run dev",
 		"dev:backend": "cd backend && bun run dev",

@@ -46,7 +46,8 @@ A full-stack, Postman-inspired API workspace for composing, organizing, sending,
 │       │                        #   requests, environments, history, snippets, import-export)
 │       ├── shared/              # API client, reusable components, utilities
 │       └── styles.css           # Design system and component styles
-└── .vscode/launch.json          # Backend debugger configuration
+├── .vscode/launch.json          # Backend debugger configuration
+└── setup.sh                     # MongoDB readiness, environment files, and seed reset
 ```
 
 ## Prerequisites
@@ -57,8 +58,7 @@ A full-stack, Postman-inspired API workspace for composing, organizing, sending,
 ## MongoDB Behavior
 
 - The API connects to the database named in `MONGODB_URI` (`postman_db` by default).
-- Create `backend/.env` and `frontend/.env` from the committed `.env.example` files before the first start.
-- `bun start` runs the deterministic seed before launching the servers.
+- `setup.sh` (run automatically by `bun start`) creates missing `.env` files from the committed `.env.example` files, verifies MongoDB is reachable (starting it when possible), and runs the deterministic seed.
 - Outgoing requests are refused when they resolve to loopback, private, or link-local addresses, including after redirects. Set `ALLOW_PRIVATE_DESTINATIONS=true` in `backend/.env` to allow loopback and private ranges for local development; it is ignored when `NODE_ENV=production`, and link-local and metadata addresses are always refused.
 - The seed clears the application collections (`Workspace`, `Environment`, `Collection`, `Request`, `HistoryEntry`, `WorkspaceAccount`) and inserts a fixed baseline, so every restart restores the same known state.
 - Health at `GET /api/v1/health` reports both the API and the live database connection.
@@ -102,7 +102,7 @@ Authenticate with `POST /api/v1/auth/login` and send the returned token as `Auth
 
 | Command | Purpose |
 |---|---|
-| `bun start` | Seeds MongoDB and starts the frontend and backend together. |
+| `bun start` | Runs `setup.sh` (environment files, MongoDB check, seed), then starts the frontend and backend together. |
 | `bun run seed` | Restores the deterministic MongoDB baseline. |
 | `bun run test` | Runs the backend tests against a throwaway `postman_test` database on the local MongoDB (override with `TEST_MONGODB_URI`); the app does not need to be running. |
 | `bun run dev:backend` | Starts only the Express API on port `8000`. |
